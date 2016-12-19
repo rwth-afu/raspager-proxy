@@ -22,8 +22,37 @@ package de.rwth_aachen.afu.raspager.proxy;
  */
 public class Program {
 
-    public static void main(String[] args) {
+    private static void printHelp() {
+        System.out.println("Usage: raspager-proxy <frontend> <backend>");
+        System.out.println("Format for both arguments: Hostname:Port");
+    }
 
+    private static String[] parseAddress(String addr) {
+        String[] values = addr.split(":");
+        if (values.length == 2) {
+            return values;
+        } else {
+            throw new IllegalArgumentException("Invalid adress format.");
+        }
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 2) {
+            printHelp();
+            return;
+        }
+
+        try {
+            String[] frontend = parseAddress(args[0]);
+            String[] backend = parseAddress(args[1]);
+
+            ProxyServer server = new ProxyServer(frontend[0], Integer.parseInt(frontend[1]),
+                    backend[0], Integer.parseInt(backend[1]));
+
+            server.run();
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
     }
 
 }
