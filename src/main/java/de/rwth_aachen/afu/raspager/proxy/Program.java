@@ -20,7 +20,7 @@ package de.rwth_aachen.afu.raspager.proxy;
  *
  * @author Philipp Thiel
  */
-public class Program {
+public final class Program {
 
     private static void printHelp() {
         System.out.println("Usage: raspager-proxy <frontend> <backend>");
