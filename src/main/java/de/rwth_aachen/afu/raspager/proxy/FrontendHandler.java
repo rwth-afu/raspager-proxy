@@ -24,24 +24,36 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
+import java.net.SocketAddress;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
+ * The frontend handler is responsible for the connection to the frontend
+ * server. It will open a connection to the backend server once the connection
+ * to the frontend server has been established.
  *
  * @author Philipp Thiel
  */
 class FrontendHandler extends ChannelInboundHandlerAdapter {
 
-    private final String remoteHost;
-    private final int remotePort;
+    private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
+    private final SocketAddress backendAddress;
     private Channel outboundChannel;
 
-    public FrontendHandler(String remoteHost, int remotePort) {
-        this.remoteHost = remoteHost;
-        this.remotePort = remotePort;
+    /**
+     * Creates a new frontend handler with the given backend server address.
+     *
+     * @param backendAddress Backend server address and port to use.
+     */
+    public FrontendHandler(SocketAddress backendAddress) {
+        this.backendAddress = backendAddress;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Connected to frontend server.");
+
         final Channel inboundChannel = ctx.channel();
 
         Bootstrap b = new Bootstrap();
@@ -50,7 +62,7 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
         b.handler(new BackendHandler(inboundChannel));
         b.option(ChannelOption.AUTO_READ, false);
 
-        ChannelFuture f = b.connect(remoteHost, remotePort);
+        ChannelFuture f = b.connect(backendAddress);
         outboundChannel = f.channel();
         f.addListener((ChannelFuture ff) -> {
             if (ff.isSuccess()) {
@@ -76,6 +88,8 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from frontend handler.");
+
         if (outboundChannel != null) {
             closeOnFlush(outboundChannel);
         }
@@ -83,7 +97,7 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
         closeOnFlush(ctx.channel());
     }
 

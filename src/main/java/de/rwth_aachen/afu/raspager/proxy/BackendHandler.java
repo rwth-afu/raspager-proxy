@@ -20,13 +20,17 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
+ * The backend handler is responsible for the connection to the backend server.
  *
  * @author Philipp Thiel
  */
 class BackendHandler extends ChannelInboundHandlerAdapter {
 
+    private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
 
     public BackendHandler(Channel inboundChannel) {
@@ -35,6 +39,8 @@ class BackendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Connected to backend server.");
+
         ctx.read();
     }
 
@@ -51,12 +57,15 @@ class BackendHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from backend server.");
+
         FrontendHandler.closeOnFlush(inboundChannel);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        cause.printStackTrace();
+        logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+
         FrontendHandler.closeOnFlush(ctx.channel());
     }
 

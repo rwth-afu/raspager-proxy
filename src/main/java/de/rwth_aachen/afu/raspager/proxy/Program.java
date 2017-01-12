@@ -16,7 +16,11 @@
  */
 package de.rwth_aachen.afu.raspager.proxy;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+
 /**
+ * This class contains the application entry point.
  *
  * @author Philipp Thiel
  */
@@ -27,12 +31,16 @@ public final class Program {
         System.out.println("Format for both arguments: Hostname:Port");
     }
 
-    private static String[] parseAddress(String addr) {
+    private static SocketAddress parseAddress(String addr) {
         String[] values = addr.split(":");
-        if (values.length == 2) {
-            return values;
-        } else {
-            throw new IllegalArgumentException("Invalid adress format.");
+        if (values.length != 2) {
+            throw new IllegalArgumentException("Invalid address format");
+        }
+
+        try {
+            return new InetSocketAddress(values[0], Integer.parseInt(values[1]));
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid port number", ex);
         }
     }
 
@@ -42,17 +50,11 @@ public final class Program {
             return;
         }
 
-        try {
-            String[] frontend = parseAddress(args[0]);
-            String[] backend = parseAddress(args[1]);
+        SocketAddress frontend = parseAddress(args[0]);
+        SocketAddress backend = parseAddress(args[1]);
 
-            ProxyServer server = new ProxyServer(frontend[0], Integer.parseInt(frontend[1]),
-                    backend[0], Integer.parseInt(backend[1]));
-
-            server.run();
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
+        ProxyService server = new ProxyService(frontend, backend);
+        server.run();
     }
 
 }
