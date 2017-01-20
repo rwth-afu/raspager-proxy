@@ -24,7 +24,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
-import java.net.SocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,16 +37,16 @@ import java.util.logging.Logger;
 class FrontendHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
-    private final SocketAddress backendAddress;
+    private final Settings settings;
     private Channel outboundChannel;
 
     /**
-     * Creates a new frontend handler with the given backend server address.
+     * Creates a new frontend handler.
      *
-     * @param backendAddress Backend server address and port to use.
+     * @param settings Settings instance
      */
-    public FrontendHandler(SocketAddress backendAddress) {
-        this.backendAddress = backendAddress;
+    public FrontendHandler(Settings settings) {
+        this.settings = settings;
     }
 
     @Override
@@ -62,7 +61,7 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
         b.handler(new BackendHandler(inboundChannel));
         b.option(ChannelOption.AUTO_READ, false);
 
-        ChannelFuture f = b.connect(backendAddress);
+        ChannelFuture f = b.connect(settings.getBackendAddress());
         outboundChannel = f.channel();
         f.addListener((ChannelFuture ff) -> {
             if (ff.isSuccess()) {

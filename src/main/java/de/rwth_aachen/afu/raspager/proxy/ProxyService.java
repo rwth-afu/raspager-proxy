@@ -21,7 +21,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import java.net.SocketAddress;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,22 +31,19 @@ import java.util.logging.Logger;
  *
  * @author Philipp Thiel
  */
-public class ProxyService implements Runnable {
+final class ProxyService implements Runnable {
 
     private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-    private final SocketAddress frontendAddress;
-    private final SocketAddress backendAddress;
+    private final Settings settings;
 
     /**
      * Creates a new service instance.
      *
-     * @param frontendAddress Socket address of the frontend server.
-     * @param backendAddress Socket address of the backend server.
+     * @param settings Settings instance
      */
-    public ProxyService(SocketAddress frontendAddress, SocketAddress backendAddress) {
-        this.frontendAddress = frontendAddress;
-        this.backendAddress = backendAddress;
+    public ProxyService(Settings settings) {
+        this.settings = settings;
     }
 
     @Override
@@ -56,10 +52,10 @@ public class ProxyService implements Runnable {
             Bootstrap b = new Bootstrap();
             b.group(workerGroup);
             b.channel(NioSocketChannel.class);
-            b.handler(new FrontendHandler(backendAddress));
+            b.handler(new FrontendHandler(settings));
             b.option(ChannelOption.AUTO_READ, false);
 
-            b.connect(frontendAddress).sync().channel().closeFuture().sync();
+            b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
         } catch (InterruptedException ex) {
             logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
         } finally {

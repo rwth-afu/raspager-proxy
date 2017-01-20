@@ -16,9 +16,6 @@
  */
 package de.rwth_aachen.afu.raspager.proxy;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-
 /**
  * This class contains the application entry point.
  *
@@ -26,35 +23,20 @@ import java.net.SocketAddress;
  */
 public final class Program {
 
-    private static void printHelp() {
-        System.out.println("Usage: raspager-proxy <frontend> <backend>");
-        System.out.println("Format for both arguments: Hostname:Port");
-    }
-
-    private static SocketAddress parseAddress(String addr) {
-        String[] values = addr.split(":");
-        if (values.length != 2) {
-            throw new IllegalArgumentException("Invalid address format");
+    public static void main(String[] args) {
+        String configFile = null;
+        if (args.length == 1) {
+            configFile = args[0];
         }
 
         try {
-            return new InetSocketAddress(values[0], Integer.parseInt(values[1]));
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Invalid port number", ex);
+            Settings settings = new Settings(configFile);
+            ProxyService server = new ProxyService(settings);
+            server.run();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            System.exit(1);
         }
-    }
-
-    public static void main(String[] args) {
-        if (args.length != 2) {
-            printHelp();
-            return;
-        }
-
-        SocketAddress frontend = parseAddress(args[0]);
-        SocketAddress backend = parseAddress(args[1]);
-
-        ProxyService server = new ProxyService(frontend, backend);
-        server.run();
     }
 
 }
