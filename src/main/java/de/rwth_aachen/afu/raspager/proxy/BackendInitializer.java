@@ -1,5 +1,6 @@
 package de.rwth_aachen.afu.raspager.proxy;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -8,16 +9,14 @@ import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
-class FrontendInitializer extends ChannelInitializer<SocketChannel> {
+class BackendInitializer extends ChannelInitializer<SocketChannel> {
 	// TODO Use ASCII charset instead?
 	private static final StringDecoder decoder = new StringDecoder();
 	private static final StringEncoder encoder = new StringEncoder();
-	private final WelcomeMessageEncoder msgEncoder;
-	private final Settings settings;
+	private final Channel inbound;
 
-	public FrontendInitializer(Settings settings) {
-		this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendKey());
-		this.settings = settings;
+	public BackendInitializer(Channel inbound) {
+		this.inbound = inbound;
 	}
 
 	@Override
@@ -26,8 +25,7 @@ class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(new DelimiterBasedFrameDecoder(1024, Delimiters.lineDelimiter()));
 		p.addLast(decoder);
 		p.addLast(encoder);
-		p.addLast(msgEncoder);
-		p.addLast(new FrontendHandler(settings));
+		p.addLast(new BackendHandler(inbound));
 	}
 
 }

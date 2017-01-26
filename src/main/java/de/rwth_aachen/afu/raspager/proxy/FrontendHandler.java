@@ -16,16 +16,17 @@
  */
 package de.rwth_aachen.afu.raspager.proxy;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * The frontend handler is responsible for the connection to the frontend
@@ -34,7 +35,7 @@ import java.util.logging.Logger;
  *
  * @author Philipp Thiel
  */
-class FrontendHandler extends ChannelInboundHandlerAdapter {
+class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
 	private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
 	private final Settings settings;
@@ -59,13 +60,13 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
 		Bootstrap b = new Bootstrap();
 		b.group(inboundChannel.eventLoop());
 		b.channel(ctx.channel().getClass());
-		b.handler(new BackendHandler(inboundChannel));
+		b.handler(new BackendInitializer(inboundChannel));
 		b.option(ChannelOption.AUTO_READ, false);
 
 		ChannelFuture f = b.connect(settings.getBackendAddress());
 		outboundChannel = f.channel();
-		f.addListener((ChannelFuture ff) -> {
-			if (ff.isSuccess()) {
+		f.addListener((ChannelFuture future) -> {
+			if (future.isSuccess()) {
 				inboundChannel.read();
 			} else {
 				inboundChannel.close();
@@ -74,15 +75,17 @@ class FrontendHandler extends ChannelInboundHandlerAdapter {
 	}
 
 	@Override
-	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+	protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
 		if (outboundChannel.isActive()) {
-			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture f) -> {
-				if (f.isSuccess()) {
+			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+				if (future.isSuccess()) {
 					ctx.channel().read();
 				} else {
-					f.channel().close();
+					future.channel().close();
 				}
 			});
+		} else {
+			logger.warning("Outbound channel not active.");
 		}
 	}
 
