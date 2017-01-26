@@ -45,7 +45,7 @@ final class Settings {
      * @throws NullPointerException If a required settings is not found.
      */
     public Settings(String filename) throws FileNotFoundException, IOException {
-        if (filename == null) {
+        if (filename == null || filename.isEmpty()) {
             filename = DEFAULT_CONFIG;
         }
 
@@ -57,9 +57,9 @@ final class Settings {
         // Frontend configuration
         frontendAddress = new InetSocketAddress(getString(props, "frontend.host"),
                 getInt(props, "frontend.port"));
-        frontendKey = getString(props, "frontend.key", null);
+        frontendKey = getString(props, "frontend.key");
 
-        // Backend configruation
+        // Backend configuration
         backendAddress = new InetSocketAddress(getString(props, "backend.host"),
                 getInt(props, "backend.port"));
     }
@@ -98,11 +98,6 @@ final class Settings {
         } else {
             throw new NullPointerException("Key not found: " + key);
         }
-    }
-
-    private static String getString(Properties props, String key, String defaultValue) {
-        String value = props.getProperty(key);
-        return value != null ? value : defaultValue;
     }
 
     private static int getInt(Properties props, String key) {

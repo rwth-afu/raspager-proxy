@@ -19,7 +19,7 @@ package de.rwth_aachen.afu.raspager.proxy;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  *
  * @author Philipp Thiel
  */
-class BackendHandler extends ChannelInboundHandlerAdapter {
+class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
@@ -45,7 +45,14 @@ class BackendHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from backend server.");
+
+        FrontendHandler.closeOnFlush(inboundChannel);
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         inboundChannel.writeAndFlush(msg).addListener((ChannelFuture f) -> {
             if (f.isSuccess()) {
                 ctx.channel().read();
@@ -53,13 +60,6 @@ class BackendHandler extends ChannelInboundHandlerAdapter {
                 f.channel().close();
             }
         });
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Disconnected from backend server.");
-
-        FrontendHandler.closeOnFlush(inboundChannel);
     }
 
     @Override
