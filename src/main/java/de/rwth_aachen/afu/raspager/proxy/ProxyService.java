@@ -16,13 +16,14 @@
  */
 package de.rwth_aachen.afu.raspager.proxy;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The proxy service implementation. This class will act as a bridge between two
@@ -33,33 +34,34 @@ import java.util.logging.Logger;
  */
 final class ProxyService implements Runnable {
 
-    private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-    private final Settings settings;
+	private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private final Settings settings;
 
-    /**
-     * Creates a new service instance.
-     *
-     * @param settings Settings instance
-     */
-    public ProxyService(Settings settings) {
-        this.settings = settings;
-    }
+	/**
+	 * Creates a new service instance.
+	 *
+	 * @param settings
+	 *            Settings instance
+	 */
+	public ProxyService(Settings settings) {
+		this.settings = settings;
+	}
 
-    @Override
-    public void run() {
-        try {
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup);
-            b.channel(NioSocketChannel.class);
-            b.handler(new FrontendHandler(settings));
-            b.option(ChannelOption.AUTO_READ, false);
+	@Override
+	public void run() {
+		try {
+			Bootstrap b = new Bootstrap();
+			b.group(workerGroup);
+			b.channel(NioSocketChannel.class);
+			b.handler(new FrontendInitializer(settings));
+			b.option(ChannelOption.AUTO_READ, false);
 
-            b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
-        } catch (InterruptedException ex) {
-            logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
-        } finally {
-            workerGroup.shutdownGracefully();
-        }
-    }
+			b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
+		} catch (InterruptedException ex) {
+			logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
+		} finally {
+			workerGroup.shutdownGracefully();
+		}
+	}
 }

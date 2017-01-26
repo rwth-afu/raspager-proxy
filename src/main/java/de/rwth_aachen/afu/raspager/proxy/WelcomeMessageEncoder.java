@@ -30,34 +30,35 @@ import java.util.regex.Pattern;
  */
 class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
-    private static final Pattern welcomePattern = Pattern.compile("\\[([/\\p{Alnum}]+) v(\\d+\\.\\d+[-#\\p{Alnum}]*)]");
-    private final String authKey;
+	private static final Pattern welcomePattern = Pattern.compile("\\[([/\\p{Alnum}]+) v(\\d+\\.\\d+[-#\\p{Alnum}]*)]");
+	private final String authKey;
 
-    /**
-     * Creates a new handler instance.
-     *
-     * @param authKey Authentication key to use. This must not be null or empty.
-     */
-    public WelcomeMessageEncoder(String authKey) {
-        if (authKey == null || authKey.isEmpty()) {
-            throw new NullPointerException("authKey");
-        }
+	/**
+	 * Creates a new handler instance.
+	 *
+	 * @param authKey
+	 *            Authentication key to use. This must not be null or empty.
+	 */
+	public WelcomeMessageEncoder(String authKey) {
+		if (authKey == null || authKey.isEmpty()) {
+			throw new NullPointerException("authKey");
+		}
 
-        this.authKey = authKey;
-    }
+		this.authKey = authKey;
+	}
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
-        Matcher m = welcomePattern.matcher(msg);
-        if (m.matches()) {
-            String response = String.format("[%s %s %s]\r\n", m.group(1), m.group(2), authKey);
-            out.add(response);
+	@Override
+	protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
+		Matcher m = welcomePattern.matcher(msg);
+		if (m.matches()) {
+			String response = String.format("[%s %s %s]\r\n", m.group(1), m.group(2), authKey);
+			out.add(response);
 
-            ctx.pipeline().remove(this);
-        } else {
-            // Forward the message
-            out.add(msg);
-        }
-    }
+			ctx.pipeline().remove(this);
+		} else {
+			// Forward the message
+			out.add(msg);
+		}
+	}
 
 }

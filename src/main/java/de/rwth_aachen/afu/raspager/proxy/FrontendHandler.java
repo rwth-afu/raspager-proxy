@@ -36,73 +36,74 @@ import java.util.logging.Logger;
  */
 class FrontendHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
-    private final Settings settings;
-    private Channel outboundChannel;
+	private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
+	private final Settings settings;
+	private Channel outboundChannel;
 
-    /**
-     * Creates a new frontend handler.
-     *
-     * @param settings Settings instance
-     */
-    public FrontendHandler(Settings settings) {
-        this.settings = settings;
-    }
+	/**
+	 * Creates a new frontend handler.
+	 *
+	 * @param settings
+	 *            Settings instance
+	 */
+	public FrontendHandler(Settings settings) {
+		this.settings = settings;
+	}
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Connected to frontend server.");
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		logger.info("Connected to frontend server.");
 
-        final Channel inboundChannel = ctx.channel();
+		final Channel inboundChannel = ctx.channel();
 
-        Bootstrap b = new Bootstrap();
-        b.group(inboundChannel.eventLoop());
-        b.channel(ctx.channel().getClass());
-        b.handler(new BackendInitializer(inboundChannel, settings.getFrontendKey()));
-        b.option(ChannelOption.AUTO_READ, false);
+		Bootstrap b = new Bootstrap();
+		b.group(inboundChannel.eventLoop());
+		b.channel(ctx.channel().getClass());
+		b.handler(new BackendHandler(inboundChannel));
+		b.option(ChannelOption.AUTO_READ, false);
 
-        ChannelFuture f = b.connect(settings.getBackendAddress());
-        outboundChannel = f.channel();
-        f.addListener((ChannelFuture ff) -> {
-            if (ff.isSuccess()) {
-                inboundChannel.read();
-            } else {
-                inboundChannel.close();
-            }
-        });
-    }
+		ChannelFuture f = b.connect(settings.getBackendAddress());
+		outboundChannel = f.channel();
+		f.addListener((ChannelFuture ff) -> {
+			if (ff.isSuccess()) {
+				inboundChannel.read();
+			} else {
+				inboundChannel.close();
+			}
+		});
+	}
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (outboundChannel.isActive()) {
-            outboundChannel.writeAndFlush(msg).addListener((ChannelFuture f) -> {
-                if (f.isSuccess()) {
-                    ctx.channel().read();
-                } else {
-                    f.channel().close();
-                }
-            });
-        }
-    }
+	@Override
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		if (outboundChannel.isActive()) {
+			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture f) -> {
+				if (f.isSuccess()) {
+					ctx.channel().read();
+				} else {
+					f.channel().close();
+				}
+			});
+		}
+	}
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Disconnected from frontend handler.");
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		logger.info("Disconnected from frontend handler.");
 
-        if (outboundChannel != null) {
-            closeOnFlush(outboundChannel);
-        }
-    }
+		if (outboundChannel != null) {
+			closeOnFlush(outboundChannel);
+		}
+	}
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
-        closeOnFlush(ctx.channel());
-    }
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
+		closeOnFlush(ctx.channel());
+	}
 
-    static void closeOnFlush(Channel ch) {
-        if (ch.isActive()) {
-            ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        }
-    }
+	static void closeOnFlush(Channel ch) {
+		if (ch.isActive()) {
+			ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+		}
+	}
 }
