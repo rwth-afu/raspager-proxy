@@ -51,7 +51,7 @@ class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 	protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
 		Matcher m = welcomePattern.matcher(msg);
 		if (m.matches()) {
-			String response = String.format("[%s v%s %s]\r\n", m.group(1), m.group(2), authKey);
+			String response = String.format("[%s v%s %s]", m.group(1), m.group(2), authKey);
 			out.add(response);
 
 			ctx.pipeline().remove(this);

@@ -12,6 +12,7 @@ class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 	// TODO Use ASCII charset instead?
 	private static final StringDecoder decoder = new StringDecoder();
 	private static final StringEncoder encoder = new StringEncoder();
+	private static final LineBreakAdder lba = new LineBreakAdder();
 	private final WelcomeMessageEncoder msgEncoder;
 	private final Settings settings;
 
@@ -26,6 +27,7 @@ class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(new DelimiterBasedFrameDecoder(1024, Delimiters.lineDelimiter()));
 		p.addLast(decoder);
 		p.addLast(encoder);
+		p.addLast(lba);
 		p.addLast(msgEncoder);
 		p.addLast(new FrontendHandler(settings));
 	}

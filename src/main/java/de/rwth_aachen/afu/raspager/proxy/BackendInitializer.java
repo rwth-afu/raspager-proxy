@@ -13,6 +13,7 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 	// TODO Use ASCII charset instead?
 	private static final StringDecoder decoder = new StringDecoder();
 	private static final StringEncoder encoder = new StringEncoder();
+	private static final LineBreakAdder lba = new LineBreakAdder();
 	private final Channel inbound;
 
 	public BackendInitializer(Channel inbound) {
@@ -25,6 +26,7 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(new DelimiterBasedFrameDecoder(1024, Delimiters.lineDelimiter()));
 		p.addLast(decoder);
 		p.addLast(encoder);
+		p.addLast(lba);
 		p.addLast(new BackendHandler(inbound));
 	}
 
