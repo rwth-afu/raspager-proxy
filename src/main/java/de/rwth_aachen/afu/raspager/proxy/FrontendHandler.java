@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,76 +37,77 @@ import io.netty.channel.SimpleChannelInboundHandler;
  */
 class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
-	private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
-	private final Settings settings;
-	private Channel outboundChannel;
+    private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
+    private final Settings settings;
+    private Channel outboundChannel;
 
-	/**
-	 * Creates a new frontend handler.
-	 *
-	 * @param settings
-	 *            Settings instance
-	 */
-	public FrontendHandler(Settings settings) {
-		this.settings = settings;
-	}
+    /**
+     * Creates a new frontend handler.
+     *
+     * @param settings Settings instance
+     */
+    public FrontendHandler(Settings settings) {
+        this.settings = settings;
+    }
 
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		logger.info("Connected to frontend server.");
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Connected to frontend server.");
 
-		final Channel inboundChannel = ctx.channel();
+        final Channel inboundChannel = ctx.channel();
 
-		Bootstrap b = new Bootstrap();
-		b.group(inboundChannel.eventLoop());
-		b.channel(ctx.channel().getClass());
-		b.handler(new BackendInitializer(inboundChannel));
-		b.option(ChannelOption.AUTO_READ, false);
+        Bootstrap b = new Bootstrap();
+        b.group(inboundChannel.eventLoop());
+        b.channel(ctx.channel().getClass());
+        b.handler(new BackendInitializer(inboundChannel));
+        b.option(ChannelOption.AUTO_READ, false);
 
-		ChannelFuture f = b.connect(settings.getBackendAddress());
-		outboundChannel = f.channel();
-		f.addListener((ChannelFuture future) -> {
-			if (future.isSuccess()) {
-				inboundChannel.read();
-			} else {
-				inboundChannel.close();
-			}
-		});
-	}
+        ChannelFuture f = b.connect(settings.getBackendAddress());
+        outboundChannel = f.channel();
+        f.addListener((ChannelFuture future) -> {
+            if (future.isSuccess()) {
+                inboundChannel.read();
+            } else {
+                inboundChannel.close();
+            }
+        });
+    }
 
-	@Override
-	protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-		if (outboundChannel.isActive()) {
-			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-				if (future.isSuccess()) {
-					ctx.channel().read();
-				} else {
-					future.channel().close();
-				}
-			});
-		} else {
-			logger.warning("Outbound channel not active.");
-		}
-	}
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
+        logger.info("Forwarding message from frontend to backend.");
 
-	@Override
-	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		logger.info("Disconnected from frontend handler.");
+        if (outboundChannel.isActive()) {
+            outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+                if (future.isSuccess()) {
+                    ctx.channel().read();
+                } else {
+                    future.channel().close();
+                }
+            });
+        } else {
+            logger.warning("Outbound channel not active.");
+        }
+    }
 
-		if (outboundChannel != null) {
-			closeOnFlush(outboundChannel);
-		}
-	}
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from frontend server.");
 
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
-		closeOnFlush(ctx.channel());
-	}
+        if (outboundChannel != null) {
+            closeOnFlush(outboundChannel);
+        }
+    }
 
-	static void closeOnFlush(Channel ch) {
-		if (ch.isActive()) {
-			ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-		}
-	}
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
+        closeOnFlush(ctx.channel());
+    }
+
+    static void closeOnFlush(Channel ch) {
+        if (ch.isActive()) {
+            ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+        }
+    }
 }

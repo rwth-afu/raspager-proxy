@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,34 +34,33 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 final class ProxyService implements Runnable {
 
-	private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
-	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-	private final Settings settings;
+    private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
+    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private final Settings settings;
 
-	/**
-	 * Creates a new service instance.
-	 *
-	 * @param settings
-	 *            Settings instance
-	 */
-	public ProxyService(Settings settings) {
-		this.settings = settings;
-	}
+    /**
+     * Creates a new service instance.
+     *
+     * @param settings Settings instance
+     */
+    public ProxyService(Settings settings) {
+        this.settings = settings;
+    }
 
-	@Override
-	public void run() {
-		try {
-			Bootstrap b = new Bootstrap();
-			b.group(workerGroup);
-			b.channel(NioSocketChannel.class);
-			b.handler(new FrontendInitializer(settings));
-			b.option(ChannelOption.AUTO_READ, false);
+    @Override
+    public void run() {
+        try {
+            Bootstrap b = new Bootstrap();
+            b.group(workerGroup);
+            b.channel(NioSocketChannel.class);
+            b.handler(new FrontendInitializer(settings));
+            b.option(ChannelOption.AUTO_READ, false);
 
-			b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
-		} catch (InterruptedException ex) {
-			logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
-		} finally {
-			workerGroup.shutdownGracefully();
-		}
-	}
+            b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
+        } catch (InterruptedException ex) {
+            logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
+        } finally {
+            workerGroup.shutdownGracefully();
+        }
+    }
 }

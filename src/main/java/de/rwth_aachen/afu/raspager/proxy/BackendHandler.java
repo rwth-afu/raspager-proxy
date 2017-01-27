@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,43 +30,45 @@ import java.util.logging.Logger;
  */
 class BackendHandler extends SimpleChannelInboundHandler<String> {
 
-	private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
-	private final Channel inboundChannel;
+    private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
+    private final Channel inboundChannel;
 
-	public BackendHandler(Channel inboundChannel) {
-		this.inboundChannel = inboundChannel;
-	}
+    public BackendHandler(Channel inboundChannel) {
+        this.inboundChannel = inboundChannel;
+    }
 
-	@Override
-	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		logger.info("Connected to backend server.");
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Connected to backend server.");
 
-		ctx.read();
-	}
+        ctx.read();
+    }
 
-	@Override
-	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		logger.info("Disconnected from backend server.");
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from backend server.");
 
-		FrontendHandler.closeOnFlush(inboundChannel);
-	}
+        FrontendHandler.closeOnFlush(inboundChannel);
+    }
 
-	@Override
-	protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-		inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-			if (future.isSuccess()) {
-				ctx.channel().read();
-			} else {
-				future.channel().close();
-			}
-		});
-	}
+    @Override
+    protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
+        logger.info("Forwarding message from backend to frontend.");
 
-	@Override
-	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+        inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+            if (future.isSuccess()) {
+                ctx.channel().read();
+            } else {
+                future.channel().close();
+            }
+        });
+    }
 
-		FrontendHandler.closeOnFlush(ctx.channel());
-	}
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+
+        FrontendHandler.closeOnFlush(ctx.channel());
+    }
 
 }
