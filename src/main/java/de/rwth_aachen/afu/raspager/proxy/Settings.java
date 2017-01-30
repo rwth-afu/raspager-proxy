@@ -58,7 +58,7 @@ final class Settings {
         // Retry sleep time
         reconnectSleepTime = getLong(props, "reconnectSleepTime");
         if (reconnectSleepTime < 0) {
-            throw new IllegalArgumentException("Retry sleep time cannot be smaller than 0.");
+            throw new IllegalArgumentException("Reconnect sleep time cannot be negative.");
         }
 
         // Frontend configuration
