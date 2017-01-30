@@ -20,6 +20,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -28,7 +29,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 /**
  * The proxy service implementation. This class will act as a bridge between two
  * servers by opening a connection to each server and forwarding all traffic
- * between them.
+ * between them. If an exception occurs the connection will be re-established.
  *
  * @author Philipp Thiel
  */
@@ -37,6 +38,7 @@ final class ProxyService implements Runnable {
     private static final Logger logger = Logger.getLogger(ProxyService.class.getName());
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private final Settings settings;
+    private volatile boolean shutdownRequested = false;
 
     /**
      * Creates a new service instance.
@@ -50,17 +52,58 @@ final class ProxyService implements Runnable {
     @Override
     public void run() {
         try {
+            while (!shutdownRequested) {
+                connectAndWait();
+
+                if (settings.getRetrySleepTime() > 0) {
+                    try {
+                        Thread.sleep(settings.getRetrySleepTime());
+                    } catch (InterruptedException ex) {
+                        logger.warning("Sleeping thread interrupted.");
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, "Fatal exception in proxy service.", ex);
+        } finally {
+            workerGroup.shutdownGracefully();
+        }
+    }
+
+    private void connectAndWait() {
+        Channel ch = null;
+        try {
             Bootstrap b = new Bootstrap();
             b.group(workerGroup);
             b.channel(NioSocketChannel.class);
             b.handler(new FrontendInitializer(settings));
             b.option(ChannelOption.AUTO_READ, false);
 
-            b.connect(settings.getFrontendAddress()).sync().channel().closeFuture().sync();
+            ch = b.connect(settings.getFrontendAddress()).sync().channel();
+            ch.closeFuture().sync();
         } catch (InterruptedException ex) {
-            logger.log(Level.SEVERE, "Proxy service has been interrupted.", ex);
-        } finally {
-            workerGroup.shutdownGracefully();
+            logger.warning("Proxy service has been interrupted.");
+        } catch (Exception ex) {
+            logger.log(Level.SEVERE, "Exception in proxy service.", ex);
+
+            if (ch != null) {
+                ch.close();
+            }
+        }
+    }
+
+    /**
+     * Closes the proxy service if running.
+     */
+    public void shutdown() {
+        shutdownRequested = true;
+
+        try {
+            if (workerGroup != null) {
+                workerGroup.shutdownGracefully().sync();
+            }
+        } catch (InterruptedException ex) {
+            logger.warning("Waiting for shutdown has been interrupted.");
         }
     }
 }

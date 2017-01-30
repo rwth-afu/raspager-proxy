@@ -16,12 +16,17 @@
  */
 package de.rwth_aachen.afu.raspager.proxy;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * This class contains the application entry point.
  *
  * @author Philipp Thiel
  */
 public final class Program {
+
+    private static final Logger logger = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
         String configFile = null;
@@ -34,7 +39,7 @@ public final class Program {
             ProxyService server = new ProxyService(settings);
             server.run();
         } catch (Exception ex) {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);
         }
     }

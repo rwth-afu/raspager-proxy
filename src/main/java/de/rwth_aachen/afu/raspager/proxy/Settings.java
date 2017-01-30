@@ -34,6 +34,7 @@ final class Settings {
     private final String frontendKey;
     private final SocketAddress frontendAddress;
     private final SocketAddress backendAddress;
+    private final long retrySleepTime;
 
     /**
      * Creates a settings instance by loading the settings from the given
@@ -54,6 +55,12 @@ final class Settings {
             props.load(fin);
         }
 
+        // Retry sleep time
+        retrySleepTime = getLong(props, "retrySleepTime");
+        if (retrySleepTime < 0) {
+            throw new IllegalArgumentException("Retry sleep time cannot be smaller than 0.");
+        }
+
         // Frontend configuration
         frontendAddress = new InetSocketAddress(getString(props, "frontend.host"),
                 getInt(props, "frontend.port"));
@@ -62,6 +69,15 @@ final class Settings {
         // Backend configuration
         backendAddress = new InetSocketAddress(getString(props, "backend.host"),
                 getInt(props, "backend.port"));
+    }
+
+    /**
+     * Returns the sleep time between retries in milliseconds.
+     *
+     * @return Time to sleep between retries in milliseconds.
+     */
+    public long getRetrySleepTime() {
+        return retrySleepTime;
     }
 
     /**
@@ -102,5 +118,9 @@ final class Settings {
 
     private static int getInt(Properties props, String key) {
         return Integer.parseInt(getString(props, key));
+    }
+
+    private static long getLong(Properties props, String key) {
+        return Long.parseLong(getString(props, key));
     }
 }
