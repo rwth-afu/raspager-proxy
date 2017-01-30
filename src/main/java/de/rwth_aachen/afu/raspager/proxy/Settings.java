@@ -34,7 +34,7 @@ final class Settings {
     private final String frontendKey;
     private final SocketAddress frontendAddress;
     private final SocketAddress backendAddress;
-    private final long retrySleepTime;
+    private final long reconnectSleepTime;
 
     /**
      * Creates a settings instance by loading the settings from the given
@@ -56,8 +56,8 @@ final class Settings {
         }
 
         // Retry sleep time
-        retrySleepTime = getLong(props, "retrySleepTime");
-        if (retrySleepTime < 0) {
+        reconnectSleepTime = getLong(props, "reconnectSleepTime");
+        if (reconnectSleepTime < 0) {
             throw new IllegalArgumentException("Retry sleep time cannot be smaller than 0.");
         }
 
@@ -76,8 +76,8 @@ final class Settings {
      *
      * @return Time to sleep between retries in milliseconds.
      */
-    public long getRetrySleepTime() {
-        return retrySleepTime;
+    public long getReconnectSleepTime() {
+        return reconnectSleepTime;
     }
 
     /**

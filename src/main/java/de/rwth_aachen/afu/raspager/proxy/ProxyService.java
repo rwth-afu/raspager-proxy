@@ -55,12 +55,14 @@ final class ProxyService implements Runnable {
             while (!shutdownRequested) {
                 connectAndWait();
 
-                if (settings.getRetrySleepTime() > 0) {
+                if (settings.getReconnectSleepTime() > 0) {
                     try {
-                        Thread.sleep(settings.getRetrySleepTime());
+                        Thread.sleep(settings.getReconnectSleepTime());
                     } catch (InterruptedException ex) {
                         logger.warning("Sleeping thread interrupted.");
                     }
+                } else {
+                    break;
                 }
             }
         } catch (Exception ex) {
