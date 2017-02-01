@@ -13,7 +13,7 @@ all required dependencies and it can be used for starting the service right away
 The proxy service expects a configuration file _RaspagerProxy.properties_ with the following contents:
 
 ```
-# Time to sleep before attempting a reconnect. Set to 0 to disable automatic reconnecting.
+# Time to sleep in milliseconds before attempting a reconnect. Set to 0 to disable automatic reconnecting.
 reconnectSleepTime = 5000
 # Frontend (DAPNET) authentication key
 frontend.key = authKeyToUse
