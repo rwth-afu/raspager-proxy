@@ -6,7 +6,7 @@ All messages received from the frontend server are forwarded to the backend serv
 This project uses maven to build. You can either build it with a maven-capable IDE or from the command line via `mvn package` if you have maven installed.
 
 This will create two jar files: _raspager-proxy-version.jar_ and _raspager-proxy-version-jar-with-dependencies.jar_. The first
-file just contains the program code and all dependencies must be present in the classpath when starting. The second file contains
+file contains just the program and all dependencies must be present in the classpath when starting. The second file also contains
 all required dependencies and it can be used for starting the service right away.
 
 ## Configuration and running the service
