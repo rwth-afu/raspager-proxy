@@ -39,7 +39,8 @@ class FrontendInitializer extends ChannelInitializer<SocketChannel> {
     private final Settings settings;
 
     public FrontendInitializer(Settings settings) {
-        this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendKey());
+        this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(),
+                settings.getFrontendKey());
         this.settings = settings;
     }
 

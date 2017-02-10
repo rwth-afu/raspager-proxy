@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
     private static final Pattern welcomePattern = Pattern.compile("\\[([/\\p{Alnum}]+) v(\\d+\\.\\d+[-#\\p{Alnum}]*)]");
+    private final String authName;
     private final String authKey;
 
     /**
@@ -38,11 +39,14 @@ class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
      *
      * @param authKey Authentication key to use. This must not be null or empty.
      */
-    public WelcomeMessageEncoder(String authKey) {
-        if (authKey == null || authKey.isEmpty()) {
+    public WelcomeMessageEncoder(String authName, String authKey) {
+        if (authName == null || authName.isEmpty()) {
+            throw new NullPointerException("name");
+        } else if (authKey == null || authKey.isEmpty()) {
             throw new NullPointerException("authKey");
         }
 
+        this.authName = authName;
         this.authKey = authKey;
     }
 
@@ -50,7 +54,7 @@ class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
     protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
         Matcher m = welcomePattern.matcher(msg);
         if (m.matches()) {
-            String response = String.format("[%s v%s %s]", m.group(1), m.group(2), authKey);
+            String response = String.format("[%s v%s %s %s]", m.group(1), m.group(2), authName, authKey);
             out.add(response);
 
             ctx.pipeline().remove(this);

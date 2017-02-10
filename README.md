@@ -15,8 +15,10 @@ The proxy service expects a configuration file _RaspagerProxy.properties_ with t
 ```
 # Time to sleep in milliseconds before attempting a reconnect. Set to 0 to disable automatic reconnecting.
 reconnectSleepTime = 5000
-# Frontend (DAPNET) authentication key
-frontend.key = authKeyToUse
+# Frontend (DAPNET) authentication name
+frontend.name = transmitterName
+# Frontend authentication key
+frontend.key = transmitterKey
 # Frontend host name or IP address
 frontend.host = dapnet-core-server
 # Frontend port number

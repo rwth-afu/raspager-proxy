@@ -31,6 +31,7 @@ import java.util.Properties;
 final class Settings {
 
     private static final String DEFAULT_CONFIG = "RaspagerProxy.properties";
+    private final String frontendName;
     private final String frontendKey;
     private final SocketAddress frontendAddress;
     private final SocketAddress backendAddress;
@@ -62,9 +63,10 @@ final class Settings {
         }
 
         // Frontend configuration
+        frontendName = getString(props, "frontend.name");
+        frontendKey = getString(props, "frontend.key");
         frontendAddress = new InetSocketAddress(getString(props, "frontend.host"),
                 getInt(props, "frontend.port"));
-        frontendKey = getString(props, "frontend.key");
 
         // Backend configuration
         backendAddress = new InetSocketAddress(getString(props, "backend.host"),
@@ -87,6 +89,15 @@ final class Settings {
      */
     public SocketAddress getFrontendAddress() {
         return frontendAddress;
+    }
+
+    /**
+     * Gets the name used to authenticate with the frontend server.
+     *
+     * @return Frontend authentication name.
+     */
+    public String getFrontendName() {
+        return frontendName;
     }
 
     /**
