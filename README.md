@@ -1,16 +1,17 @@
-# raspager-proxy
-A proxy service implementation to bridge a connection to a DAPNET master server with a connection to a raspager server.
-All messages received from the frontend server are forwarded to the backend server and vice versa.
+# DAPNET Proxy
+A proxy service implementation to bridge a connection to a DAPNET master server with a connection to a legacy raspager server.
+All messages received from the frontend server are forwarded to the backend server and vice versa. Use this proxy only for
+legacy raspager devices that do not support connecting to the DAPNET master server natively (like C9000).
 
 ## How to build
 This project uses maven to build. You can either build it with a maven-capable IDE or from the command line via `mvn package` if you have maven installed.
 
-This will create two jar files: _raspager-proxy-version.jar_ and _raspager-proxy-version-jar-with-dependencies.jar_. The first
-file contains just the program and all dependencies must be present in the classpath when starting. The second file also contains
+This will create two jar files: _dapnet-proxy-version.jar_ and _dapnet-proxy-version-jar-with-dependencies.jar_. The first
+file contains just the program and all dependencies must be present in the classpath when starting. The second file contains
 all required dependencies and it can be used for starting the service right away.
 
 ## Configuration and running the service
-The proxy service expects a configuration file _RaspagerProxy.properties_ with the following contents:
+The proxy service expects a configuration file _proxy.properties_ with the following contents:
 
 ```
 # Time to sleep in milliseconds before attempting a reconnect. Set to 0 to disable automatic reconnecting.
@@ -29,7 +30,7 @@ backend.host = raspager-server
 backend.port = 1337
 ```
 
-Then start the program by executing `java -jar raspager-proxy-version.jar`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.
+Then start the program by executing `java -jar dapnet-proxy-version.jar`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.
 
 ## License
 This project is licensed under the GNU GPLv3. See [License](LICENSE.txt) for details.
