@@ -27,6 +27,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.net.ConnectException;
 
 /**
  * The frontend handler is responsible for the connection to the frontend
@@ -101,7 +102,13 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
+        if (cause instanceof ConnectException) {
+            logger.log(Level.SEVERE, "Could not connect to backend: {0}",
+                    cause.getMessage());
+        } else {
+            logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
+        }
+
         closeOnFlush(ctx.channel());
     }
 

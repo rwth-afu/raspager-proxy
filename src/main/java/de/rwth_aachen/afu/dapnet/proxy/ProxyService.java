@@ -25,6 +25,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import java.net.ConnectException;
 
 /**
  * The proxy service implementation. This class will act as a bridge between two
@@ -86,7 +87,12 @@ final class ProxyService implements Runnable {
         } catch (InterruptedException ex) {
             logger.warning("Proxy service has been interrupted.");
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, "Exception in proxy service.", ex);
+            if (ex instanceof ConnectException) {
+                logger.log(Level.SEVERE, "Could not connect to frontend: {0}",
+                        ex.getMessage());
+            } else {
+                logger.log(Level.SEVERE, "Exception in proxy service.", ex);
+            }
 
             if (ch != null) {
                 ch.close();
