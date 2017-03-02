@@ -32,7 +32,7 @@ class LineBreakAdder extends MessageToMessageEncoder<String> {
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
-		out.add(String.format("%s\r\n", msg));
+		out.add(String.format("%s\n", msg));
 	}
 
 }
