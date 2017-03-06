@@ -28,6 +28,8 @@ frontend.port = 43434
 backend.host = raspager-server
 # Backend port number
 backend.port = 1337
+# Timeout in milliseconds for keep alive requests. Set to 0 to disable.
+backend.timeout = 30000
 ```
 
 Then start the program by executing `java -jar dapnet-proxy-version.jar`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.

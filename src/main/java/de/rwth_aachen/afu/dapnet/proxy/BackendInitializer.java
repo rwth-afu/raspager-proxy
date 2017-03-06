@@ -24,6 +24,8 @@ import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class initializes the backend channel pipepline.
@@ -33,22 +35,29 @@ import io.netty.handler.codec.string.StringEncoder;
 class BackendInitializer extends ChannelInitializer<SocketChannel> {
 
     // TODO Use ASCII charset instead?
-    private static final StringDecoder decoder = new StringDecoder();
-    private static final StringEncoder encoder = new StringEncoder();
-    private static final LineBreakAdder lba = new LineBreakAdder();
+    private static final StringDecoder DECODER = new StringDecoder();
+    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final LineBreakAdder LBA = new LineBreakAdder();
     private final Channel inbound;
+    private final long timeout;
 
-    public BackendInitializer(Channel inbound) {
+    public BackendInitializer(Channel inbound, long timeout) {
         this.inbound = inbound;
+        this.timeout = timeout;
     }
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline p = ch.pipeline();
         p.addLast(new DelimiterBasedFrameDecoder(1024, Delimiters.lineDelimiter()));
-        p.addLast(decoder);
-        p.addLast(encoder);
-        p.addLast(lba);
+        p.addLast(DECODER);
+        p.addLast(ENCODER);
+        p.addLast(LBA);
+
+        if (timeout > 0) {
+            p.addLast(new IdleStateHandler(timeout, timeout, 0, TimeUnit.MILLISECONDS));
+        }
+
         p.addLast(new BackendHandler(inbound));
     }
 

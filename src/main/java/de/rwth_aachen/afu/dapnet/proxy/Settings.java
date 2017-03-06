@@ -36,6 +36,7 @@ final class Settings {
     private final SocketAddress frontendAddress;
     private final SocketAddress backendAddress;
     private final long reconnectSleepTime;
+    private final long backendTimeout;
 
     /**
      * Creates a settings instance by loading the settings from the given
@@ -65,12 +66,11 @@ final class Settings {
         // Frontend configuration
         frontendName = getString(props, "frontend.name");
         frontendKey = getString(props, "frontend.key");
-        frontendAddress = new InetSocketAddress(getString(props, "frontend.host"),
-                getInt(props, "frontend.port"));
+        frontendAddress = getAddress(props, "frontend.host", "frontend.port");
 
         // Backend configuration
-        backendAddress = new InetSocketAddress(getString(props, "backend.host"),
-                getInt(props, "backend.port"));
+        backendAddress = getAddress(props, "backend.host", "backend.port");
+        backendTimeout = getLong(props, "backend.timeout");
     }
 
     /**
@@ -118,6 +118,15 @@ final class Settings {
         return backendAddress;
     }
 
+    /**
+     * Gets the backend timeout in milliseconds.
+     *
+     * @return Backend timeout in milliseconds.
+     */
+    public long getBackendTimout() {
+        return backendTimeout;
+    }
+
     private static String getString(Properties props, String key) {
         String value = props.getProperty(key);
         if (value != null) {
@@ -127,6 +136,11 @@ final class Settings {
         }
     }
 
+    private static SocketAddress getAddress(Properties props, String host,
+            String port) {
+        return new InetSocketAddress(getString(props, host), getInt(props, port));
+    }
+
     private static int getInt(Properties props, String key) {
         return Integer.parseInt(getString(props, key));
     }
@@ -134,4 +148,5 @@ final class Settings {
     private static long getLong(Properties props, String key) {
         return Long.parseLong(getString(props, key));
     }
+
 }

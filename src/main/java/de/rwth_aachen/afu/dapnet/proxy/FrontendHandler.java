@@ -60,7 +60,8 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
         Bootstrap b = new Bootstrap();
         b.group(inboundChannel.eventLoop());
         b.channel(ctx.channel().getClass());
-        b.handler(new BackendInitializer(inboundChannel));
+        b.handler(new BackendInitializer(inboundChannel,
+                settings.getBackendTimout()));
         b.option(ChannelOption.AUTO_READ, false);
 
         ChannelFuture f = b.connect(settings.getBackendAddress());

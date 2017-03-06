@@ -32,9 +32,9 @@ import io.netty.handler.codec.string.StringEncoder;
 class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 
     // TODO Use ASCII charset instead?
-    private static final StringDecoder decoder = new StringDecoder();
-    private static final StringEncoder encoder = new StringEncoder();
-    private static final LineBreakAdder lba = new LineBreakAdder();
+    private static final StringDecoder DECODER = new StringDecoder();
+    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final LineBreakAdder LBA = new LineBreakAdder();
     private final WelcomeMessageEncoder msgEncoder;
     private final Settings settings;
 
@@ -48,9 +48,9 @@ class FrontendInitializer extends ChannelInitializer<SocketChannel> {
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline p = ch.pipeline();
         p.addLast(new DelimiterBasedFrameDecoder(1024, Delimiters.lineDelimiter()));
-        p.addLast(decoder);
-        p.addLast(encoder);
-        p.addLast(lba);
+        p.addLast(DECODER);
+        p.addLast(ENCODER);
+        p.addLast(LBA);
         p.addLast(msgEncoder);
         p.addLast(new FrontendHandler(settings));
     }

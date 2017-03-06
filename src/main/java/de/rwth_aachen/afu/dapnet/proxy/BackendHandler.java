@@ -20,6 +20,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleStateEvent;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,8 +31,10 @@ import java.util.logging.Logger;
  */
 class BackendHandler extends SimpleChannelInboundHandler<String> {
 
+    private static final String KEEP_ALIVE_REQ = "2:PING";
     private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
+    private boolean sendKeepAlive = false;
 
     public BackendHandler(Channel inboundChannel) {
         this.inboundChannel = inboundChannel;
@@ -52,16 +55,23 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-        logger.info("Forwarding message from backend to frontend.");
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+        if (sendKeepAlive && msg.startsWith(KEEP_ALIVE_REQ)) {
+            logger.info("Received keep alive response from backend.");
+        } else {
+            logger.info("Forwarding message from backend to frontend.");
 
-        inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-            if (future.isSuccess()) {
-                ctx.channel().read();
-            } else {
-                future.channel().close();
-            }
-        });
+            inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+                if (future.isSuccess()) {
+                    ctx.channel().read();
+                } else {
+                    future.channel().close();
+                }
+            });
+
+            // Waiting for the handshake to complete would be better
+            sendKeepAlive = true;
+        }
     }
 
     @Override
@@ -69,6 +79,27 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
         logger.log(Level.SEVERE, "Exception in backend handler.", cause);
 
         FrontendHandler.closeOnFlush(ctx.channel());
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent idle = (IdleStateEvent) evt;
+            switch (idle.state()) {
+                case READER_IDLE:
+                    logger.severe("Read from backend timed out, closing channel.");
+                    ctx.close();
+                    break;
+                case WRITER_IDLE:
+                    if (sendKeepAlive) {
+                        logger.info("Sending keep alive request to backend.");
+                        ctx.writeAndFlush(KEEP_ALIVE_REQ);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
 }

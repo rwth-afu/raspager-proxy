@@ -30,7 +30,8 @@ import java.util.regex.Pattern;
  */
 class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
-    private static final Pattern welcomePattern = Pattern.compile("\\[([/\\p{Alnum}]+) v?(\\d[\\d\\.]+[\\p{Graph}]*)]");
+    private static final Pattern WELCOME_PATTERN = Pattern.compile(
+            "\\[([/\\p{Alnum}]+) v?(\\d[\\d\\.]+[\\p{Graph}]*)]");
     private final String authName;
     private final String authKey;
 
@@ -52,7 +53,7 @@ class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
-        Matcher m = welcomePattern.matcher(msg);
+        Matcher m = WELCOME_PATTERN.matcher(msg);
         if (m.matches()) {
             String response = String.format("[%s v%s %s %s]", m.group(1), m.group(2), authName, authKey);
             out.add(response);
