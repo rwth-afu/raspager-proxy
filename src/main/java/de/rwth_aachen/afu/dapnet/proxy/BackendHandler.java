@@ -31,11 +31,14 @@ import java.util.logging.Logger;
  */
 class BackendHandler extends SimpleChannelInboundHandler<String> {
 
+    private enum State {
+        HANDSHAKE, SEND_KEEP_ALIVE, PENDING_KEEP_ALIVE_1, PENDING_KEEP_ALIVE_2
+    }
+
     private static final String KEEP_ALIVE_REQ = "2:PING";
     private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
-    private volatile boolean sendKeepAlive = false;
-    private volatile boolean pendingKeepAlive = false;
+    private volatile State state = State.HANDSHAKE;
 
     public BackendHandler(Channel inboundChannel) {
         this.inboundChannel = inboundChannel;
@@ -57,43 +60,72 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        if (sendKeepAlive && msg.startsWith(KEEP_ALIVE_REQ)) {
-            logger.info("Received keep alive response from backend.");
-            pendingKeepAlive = false;
-        } else {
-            logger.info("Forwarding message from backend to frontend.");
+        boolean forward = true;
 
-            inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-                if (future.isSuccess()) {
-                    ctx.channel().read();
-                } else {
-                    future.channel().close();
+        switch (state) {
+            case HANDSHAKE:
+                if (msg.startsWith("2:")) {
+                    state = State.SEND_KEEP_ALIVE;
                 }
-            });
+                break;
+            case SEND_KEEP_ALIVE:
+                break;
+            case PENDING_KEEP_ALIVE_1:
+                if (msg.startsWith(KEEP_ALIVE_REQ)) {
+                    state = State.PENDING_KEEP_ALIVE_2;
+                    forward = false;
+                }
+                break;
+            case PENDING_KEEP_ALIVE_2:
+                if (msg.equals("+")) {
+                    state = State.SEND_KEEP_ALIVE;
+                    forward = false;
+                    logger.info("Received keep alive response from backend.");
+                }
+                break;
+        }
 
-            // Waiting for the handshake to complete would be better
-            sendKeepAlive = true;
+        if (forward) {
+            forwardMessage(ctx, msg);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause instanceof ReadTimeoutException) {
-            handleKeepAlive(ctx);
+            handleReadTimeout(ctx);
         } else {
             logger.log(Level.SEVERE, "Exception in backend handler.", cause);
             FrontendHandler.closeOnFlush(ctx.channel());
         }
     }
 
-    private void handleKeepAlive(ChannelHandlerContext ctx) throws Exception {
-        if (pendingKeepAlive) {
-            logger.severe("Backend read timed out, closing channel.");
-            FrontendHandler.closeOnFlush(ctx.channel());
-        } else if (sendKeepAlive) {
-            logger.info("Sending keep alive request to backend.");
-            ctx.writeAndFlush(KEEP_ALIVE_REQ);
-            pendingKeepAlive = true;
+    private void forwardMessage(final ChannelHandlerContext ctx, String msg) throws Exception {
+        logger.info("Forwarding message from backend to frontend.");
+
+        inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+            if (future.isSuccess()) {
+                ctx.channel().read();
+            } else {
+                future.channel().close();
+            }
+        });
+    }
+
+    private void handleReadTimeout(ChannelHandlerContext ctx) throws Exception {
+        switch (state) {
+            case HANDSHAKE:
+                break;
+            case SEND_KEEP_ALIVE:
+                logger.info("Sending keep alive request to backend.");
+                ctx.writeAndFlush(KEEP_ALIVE_REQ);
+                state = State.PENDING_KEEP_ALIVE_1;
+                break;
+            case PENDING_KEEP_ALIVE_1:
+            case PENDING_KEEP_ALIVE_2:
+                logger.severe("Backend read timed out, closing channel.");
+                FrontendHandler.closeOnFlush(ctx.channel());
+                break;
         }
     }
 
