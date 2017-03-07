@@ -63,8 +63,6 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         boolean forward = true;
 
-        logger.info("DEBUG StatePre = " + state);
-
         switch (state) {
             case HANDSHAKE:
                 if (msg.startsWith("2:")) {
@@ -77,19 +75,16 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
                 if (msg.startsWith(KEEP_ALIVE_REQ)) {
                     state = State.PENDING_KEEP_ALIVE_2;
                     forward = false;
-                    logger.info("Received keep alive response from backend (1/1).");
                 }
                 break;
             case PENDING_KEEP_ALIVE_2:
                 if (msg.equals("+")) {
                     state = State.SEND_KEEP_ALIVE;
                     forward = false;
-                    logger.info("Received keep alive response from backend (2/2).");
+                    logger.info("Received keep alive response from backend.");
                 }
                 break;
         }
-
-        logger.info("DEBUG StatePost = " + state);
 
         if (forward) {
             forwardMessage(ctx, msg);
@@ -124,14 +119,24 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
         });
     }
 
+    private void writeMessage(ChannelHandlerContext ctx, String msg) throws Exception {
+        ctx.writeAndFlush(msg).addListener((ChannelFuture f) -> {
+            if (f.isSuccess()) {
+                f.channel().read();
+            } else {
+                f.channel().close();
+            }
+        });
+    }
+
     private void handleReadTimeout(ChannelHandlerContext ctx) throws Exception {
         switch (state) {
             case HANDSHAKE:
                 break;
             case SEND_KEEP_ALIVE:
-                logger.info("Sending keep alive request to backend.");
                 state = State.PENDING_KEEP_ALIVE_1;
-                ctx.writeAndFlush(KEEP_ALIVE_REQ);
+                logger.info("Sending keep alive request to backend.");
+                writeMessage(ctx, KEEP_ALIVE_REQ);
                 break;
             case PENDING_KEEP_ALIVE_1:
             case PENDING_KEEP_ALIVE_2:
