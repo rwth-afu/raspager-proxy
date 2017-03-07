@@ -88,6 +88,8 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
         if (forward) {
             forwardMessage(ctx, msg);
+        } else {
+            ctx.read();
         }
     }
 
