@@ -20,7 +20,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.ReadTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,7 +34,8 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     private static final String KEEP_ALIVE_REQ = "2:PING";
     private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
-    private boolean sendKeepAlive = false;
+    private volatile boolean sendKeepAlive = false;
+    private volatile boolean pendingKeepAlive = false;
 
     public BackendHandler(Channel inboundChannel) {
         this.inboundChannel = inboundChannel;
@@ -58,6 +59,7 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
         if (sendKeepAlive && msg.startsWith(KEEP_ALIVE_REQ)) {
             logger.info("Received keep alive response from backend.");
+            pendingKeepAlive = false;
         } else {
             logger.info("Forwarding message from backend to frontend.");
 
@@ -76,29 +78,22 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.log(Level.SEVERE, "Exception in backend handler.", cause);
-
-        FrontendHandler.closeOnFlush(ctx.channel());
+        if (cause instanceof ReadTimeoutException) {
+            handleKeepAlive(ctx);
+        } else {
+            logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+            FrontendHandler.closeOnFlush(ctx.channel());
+        }
     }
 
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        if (evt instanceof IdleStateEvent) {
-            IdleStateEvent idle = (IdleStateEvent) evt;
-            switch (idle.state()) {
-                case READER_IDLE:
-                    logger.severe("Read from backend timed out, closing channel.");
-                    ctx.close();
-                    break;
-                case WRITER_IDLE:
-                    if (sendKeepAlive) {
-                        logger.info("Sending keep alive request to backend.");
-                        ctx.writeAndFlush(KEEP_ALIVE_REQ);
-                    }
-                    break;
-                default:
-                    break;
-            }
+    private void handleKeepAlive(ChannelHandlerContext ctx) throws Exception {
+        if (pendingKeepAlive) {
+            logger.severe("Backend read timed out, closing channel.");
+            FrontendHandler.closeOnFlush(ctx.channel());
+        } else if (sendKeepAlive) {
+            logger.info("Sending keep alive request to backend.");
+            ctx.writeAndFlush(KEEP_ALIVE_REQ);
+            pendingKeepAlive = true;
         }
     }
 

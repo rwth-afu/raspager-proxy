@@ -24,7 +24,7 @@ import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -55,7 +55,7 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
         p.addLast(LBA);
 
         if (timeout > 0) {
-            p.addLast(new IdleStateHandler(timeout, timeout, 0, TimeUnit.MILLISECONDS));
+            p.addLast(new ReadTimeoutHandler(timeout, TimeUnit.MILLISECONDS));
         }
 
         p.addLast(new BackendHandler(inbound));
