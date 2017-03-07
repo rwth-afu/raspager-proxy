@@ -94,12 +94,8 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (cause instanceof ReadTimeoutException) {
-            handleReadTimeout(ctx);
-        } else {
-            logger.log(Level.SEVERE, "Exception in backend handler.", cause);
-            FrontendHandler.closeOnFlush(ctx.channel());
-        }
+        logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+        FrontendHandler.closeOnFlush(ctx.channel());
     }
 
     @Override
