@@ -130,8 +130,8 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
                 break;
             case SEND_KEEP_ALIVE:
                 logger.info("Sending keep alive request to backend.");
-                ctx.writeAndFlush(KEEP_ALIVE_REQ);
                 state = State.PENDING_KEEP_ALIVE_1;
+                ctx.writeAndFlush(KEEP_ALIVE_REQ);
                 break;
             case PENDING_KEEP_ALIVE_1:
             case PENDING_KEEP_ALIVE_2:
