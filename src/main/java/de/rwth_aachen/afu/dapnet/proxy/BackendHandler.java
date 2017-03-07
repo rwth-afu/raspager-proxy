@@ -20,6 +20,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.ReadTimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -97,6 +99,16 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
         } else {
             logger.log(Level.SEVERE, "Exception in backend handler.", cause);
             FrontendHandler.closeOnFlush(ctx.channel());
+        }
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent idle = (IdleStateEvent) evt;
+            if (idle.state() == IdleState.READER_IDLE) {
+                handleReadTimeout(ctx);
+            }
         }
     }
 
