@@ -29,10 +29,13 @@ public final class Program {
     private static final Logger logger = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
-        String configFile = null;
+        String configFile = "proxy.properties";
         if (args.length == 1) {
             configFile = args[0];
         }
+
+        logger.log(Level.INFO, "DAPNET Proxy Version {0}",
+                Program.class.getPackage().getImplementationVersion());
 
         try {
             Settings settings = new Settings(configFile);

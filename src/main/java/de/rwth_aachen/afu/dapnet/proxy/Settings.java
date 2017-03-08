@@ -30,7 +30,6 @@ import java.util.Properties;
  */
 final class Settings {
 
-    private static final String DEFAULT_CONFIG = "proxy.properties";
     private final String frontendName;
     private final String frontendKey;
     private final SocketAddress frontendAddress;
@@ -48,10 +47,6 @@ final class Settings {
      * @throws NullPointerException If a required settings is not found.
      */
     public Settings(String filename) throws FileNotFoundException, IOException {
-        if (filename == null || filename.isEmpty()) {
-            filename = DEFAULT_CONFIG;
-        }
-
         Properties props = new Properties();
         try (FileInputStream fin = new FileInputStream(filename)) {
             props.load(fin);
