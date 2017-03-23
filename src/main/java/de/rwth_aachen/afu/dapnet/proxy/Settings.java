@@ -40,19 +40,12 @@ final class Settings {
 
     /**
      * Creates a settings instance by loading the settings from the given
-     * configuration file.
+     * properties.
      *
-     * @param filename Configuration file to load.
-     * @throws FileNotFoundException If the file does not exist.
-     * @throws IOException If the file could not be read.
+     * @param props Properties to use.
      * @throws NullPointerException If a required settings is not found.
      */
-    public Settings(String filename) throws FileNotFoundException, IOException {
-        Properties props = new Properties();
-        try (FileInputStream fin = new FileInputStream(filename)) {
-            props.load(fin);
-        }
-
+    public Settings(Properties props) {
         profileName = getString(props, "profileName");
 
         // Retry sleep time
@@ -69,6 +62,23 @@ final class Settings {
         // Backend configuration
         backendAddress = getAddress(props, "backend.host", "backend.port");
         backendTimeout = getLong(props, "backend.timeout");
+    }
+
+    /**
+     * Loads settings from the given file.
+     *
+     * @param filename Configuration file to load.
+     * @return Loaded settings
+     * @throws FileNotFoundException If the file does not exist.
+     * @throws IOException If the file could not be read.
+     */
+    public static Settings fromFile(String filename) throws FileNotFoundException, IOException {
+        Properties props = new Properties();
+        try (FileInputStream fin = new FileInputStream(filename)) {
+            props.load(fin);
+        }
+
+        return new Settings(props);
     }
 
     /**

@@ -41,7 +41,7 @@ public final class Program {
             ProxyManager manager = new ProxyManager();
             registerShutdownHook(manager);
 
-            Settings settings = new Settings(configFile);
+            Settings settings = Settings.fromFile(configFile);
             manager.addService(settings);
 
             // Wait for termination

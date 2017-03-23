@@ -16,6 +16,12 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.9.Final</version>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <properties>
         <project.mainClass>de.rwth_aachen.afu.dapnet.proxy.Program</project.mainClass>
