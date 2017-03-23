@@ -38,13 +38,31 @@ public final class Program {
                 Program.class.getPackage().getImplementationVersion());
 
         try {
+            ProxyManager manager = new ProxyManager();
+            registerShutdownHook(manager);
+
             Settings settings = new Settings(configFile);
-            ProxyService server = new ProxyService(settings);
-            server.run();
+            manager.addService(settings);
+
+            // Wait for termination
+            manager.run();
         } catch (Exception ex) {
             logger.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);
         }
+    }
+
+    private static void registerShutdownHook(ProxyManager manager) {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    manager.shutdown();
+                } catch (Exception ex) {
+                    logger.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
+                }
+            }
+        });
     }
 
 }
