@@ -26,7 +26,7 @@ import java.util.logging.Logger;
  */
 public final class Program {
 
-    private static final Logger logger = Logger.getLogger(Program.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
         String configFile = "proxy.properties";
@@ -34,7 +34,7 @@ public final class Program {
             configFile = args[0];
         }
 
-        logger.log(Level.INFO, "DAPNET Proxy Version {0}",
+        LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}",
                 Program.class.getPackage().getImplementationVersion());
 
         try {
@@ -47,7 +47,7 @@ public final class Program {
             // Wait for termination
             manager.run();
         } catch (Exception ex) {
-            logger.log(Level.SEVERE, "Exception in main.", ex);
+            LOGGER.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);
         }
     }
@@ -59,7 +59,7 @@ public final class Program {
                 try {
                     manager.shutdown();
                 } catch (Exception ex) {
-                    logger.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
+                    LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
                 }
             }
         });

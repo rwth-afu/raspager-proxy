@@ -30,6 +30,7 @@ import java.util.Properties;
  */
 final class Settings {
 
+    private final String profileName;
     private final String frontendName;
     private final String frontendKey;
     private final SocketAddress frontendAddress;
@@ -52,6 +53,8 @@ final class Settings {
             props.load(fin);
         }
 
+        profileName = getString(props, "profileName");
+
         // Retry sleep time
         reconnectSleepTime = getLong(props, "reconnectSleepTime");
         if (reconnectSleepTime < 0) {
@@ -66,6 +69,15 @@ final class Settings {
         // Backend configuration
         backendAddress = getAddress(props, "backend.host", "backend.port");
         backendTimeout = getLong(props, "backend.timeout");
+    }
+
+    /**
+     * Returns the profile name.
+     *
+     * @return Name of the loaded profile.
+     */
+    public String getProfileName() {
+        return profileName;
     }
 
     /**

@@ -38,7 +38,7 @@ import java.net.ConnectException;
  */
 class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
-    private static final Logger logger = Logger.getLogger(FrontendHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(FrontendHandler.class.getName());
     private final Settings settings;
     private Channel outboundChannel;
 
@@ -53,7 +53,7 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Connected to frontend server.");
+        LOGGER.info("Connected to frontend server.");
 
         final Channel inboundChannel = ctx.channel();
 
@@ -77,7 +77,7 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-        logger.info("Forwarding message from frontend to backend.");
+        LOGGER.info("Forwarding message from frontend to backend.");
 
         if (outboundChannel.isActive()) {
             outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
@@ -88,13 +88,13 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
                 }
             });
         } else {
-            logger.warning("Outbound channel not active.");
+            LOGGER.warning("Outbound channel not active.");
         }
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Disconnected from frontend server.");
+        LOGGER.info("Disconnected from frontend server.");
 
         if (outboundChannel != null) {
             closeOnFlush(outboundChannel);
@@ -104,10 +104,10 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (cause instanceof ConnectException) {
-            logger.log(Level.SEVERE, "Could not connect to backend: {0}",
+            LOGGER.log(Level.SEVERE, "Could not connect to backend: {0}",
                     cause.getMessage());
         } else {
-            logger.log(Level.SEVERE, "Exception in frontend handler.", cause);
+            LOGGER.log(Level.SEVERE, "Exception in frontend handler.", cause);
         }
 
         closeOnFlush(ctx.channel());

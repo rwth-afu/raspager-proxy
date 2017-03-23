@@ -14,6 +14,7 @@ all required dependencies and it can be used for starting the service right away
 The proxy service expects a configuration file _proxy.properties_ with the following contents:
 
 ```
+profileName = Example Profile
 # Time to sleep in milliseconds before attempting a reconnect. Set to 0 to disable automatic reconnecting.
 reconnectSleepTime = 5000
 # Frontend (DAPNET) authentication name

@@ -32,7 +32,7 @@ import java.util.logging.Logger;
  */
 final class ProxyManager implements ProxyEventListener, Runnable {
 
-    private static final Logger logger = Logger.getLogger(ProxyManager.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
     private final Set<ProxyService> services = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
 
@@ -45,7 +45,7 @@ final class ProxyManager implements ProxyEventListener, Runnable {
 
         workerGroup.submit(service);
 
-        logger.info("Added proxy service.");
+        LOGGER.log(Level.INFO, "Added proxy service: {0}", settings.getProfileName());
     }
 
     public void shutdown() {
@@ -55,7 +55,7 @@ final class ProxyManager implements ProxyEventListener, Runnable {
                 ProxyService service = it.next();
                 service.close();
             } catch (Exception ex) {
-                logger.log(Level.SEVERE, "Failed to close service.", ex);
+                LOGGER.log(Level.SEVERE, "Failed to close service.", ex);
             } finally {
                 it.remove();
             }
@@ -63,16 +63,16 @@ final class ProxyManager implements ProxyEventListener, Runnable {
 
         workerGroup.shutdownGracefully().syncUninterruptibly();
 
-        logger.info("Proxy manager has been shut down.");
+        LOGGER.info("Proxy manager has been shut down.");
     }
 
     @Override
     public void onException(ProxyService service, Throwable cause) {
         if (cause instanceof ConnectException) {
-            logger.log(Level.SEVERE, "Could not connect to frontend: {0}",
+            LOGGER.log(Level.SEVERE, "Could not connect to frontend: {0}",
                     cause.getMessage());
         } else {
-            logger.log(Level.SEVERE, "Exception in proxy service.", cause);
+            LOGGER.log(Level.SEVERE, "Exception in proxy service.", cause);
         }
 
         long sleepTime = service.getSettings().getReconnectSleepTime();
@@ -82,7 +82,7 @@ final class ProxyManager implements ProxyEventListener, Runnable {
             try {
                 service.close();
             } catch (Exception ex) {
-                logger.log(Level.SEVERE, "Failed to close the service.", ex);
+                LOGGER.log(Level.SEVERE, "Failed to close the service.", ex);
             } finally {
                 synchronized (services) {
                     services.remove(service);

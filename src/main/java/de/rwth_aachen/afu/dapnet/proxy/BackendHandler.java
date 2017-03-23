@@ -37,7 +37,7 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private static final String KEEP_ALIVE_REQ = "2:PING";
-    private static final Logger logger = Logger.getLogger(BackendHandler.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(BackendHandler.class.getName());
     private final Channel inboundChannel;
     private volatile State state = State.HANDSHAKE;
 
@@ -47,14 +47,14 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Connected to backend server.");
+        LOGGER.info("Connected to backend server.");
 
         ctx.read();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Disconnected from backend server.");
+        LOGGER.info("Disconnected from backend server.");
 
         FrontendHandler.closeOnFlush(inboundChannel);
     }
@@ -81,7 +81,7 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
                 if (msg.equals("+")) {
                     state = State.SEND_KEEP_ALIVE;
                     forward = false;
-                    logger.info("Received keep alive response from backend.");
+                    LOGGER.info("Received keep alive response from backend.");
                 }
                 break;
         }
@@ -95,7 +95,7 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        logger.log(Level.SEVERE, "Exception in backend handler.", cause);
+        LOGGER.log(Level.SEVERE, "Exception in backend handler.", cause);
         FrontendHandler.closeOnFlush(ctx.channel());
     }
 
@@ -110,7 +110,7 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void forwardMessage(final ChannelHandlerContext ctx, String msg) throws Exception {
-        logger.info("Forwarding message from backend to frontend.");
+        LOGGER.info("Forwarding message from backend to frontend.");
 
         inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
             if (future.isSuccess()) {
@@ -137,12 +137,12 @@ class BackendHandler extends SimpleChannelInboundHandler<String> {
                 break;
             case SEND_KEEP_ALIVE:
                 state = State.PENDING_KEEP_ALIVE_1;
-                logger.info("Sending keep alive request to backend.");
+                LOGGER.info("Sending keep alive request to backend.");
                 writeMessage(ctx, KEEP_ALIVE_REQ);
                 break;
             case PENDING_KEEP_ALIVE_1:
             case PENDING_KEEP_ALIVE_2:
-                logger.severe("Backend read timed out, closing channel.");
+                LOGGER.severe("Backend read timed out, closing channel.");
                 FrontendHandler.closeOnFlush(ctx.channel());
                 break;
         }
