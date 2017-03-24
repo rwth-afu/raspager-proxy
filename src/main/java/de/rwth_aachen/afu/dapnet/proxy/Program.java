@@ -52,7 +52,7 @@ public final class Program {
         }
     }
 
-    private static void registerShutdownHook(ProxyManager manager) {
+    private static void registerShutdownHook(final ProxyManager manager) {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
