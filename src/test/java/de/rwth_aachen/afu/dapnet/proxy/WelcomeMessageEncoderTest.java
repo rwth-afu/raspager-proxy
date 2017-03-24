@@ -48,8 +48,8 @@ public class WelcomeMessageEncoderTest {
         return Arrays.asList(new Object[][]{
             {"forward", "forward"},
             {"[Test v1.0]", "[Test v1.0 name key]"},
-            {"[Test v1.0.0-SCP-#123456", "[Test v1.0.0-SCP-#123456 name key]"},
-            {"Test/RPC v1.0", "[Test/RPC v1.0 name key]"}
+            {"[Test v1.0.0-SCP-#123456]", "[Test v1.0.0-SCP-#123456 name key]"},
+            {"Test/RPC v1.0", "Test/RPC v1.0"}
         });
     }
 
