@@ -11,7 +11,7 @@ file contains just the program and all dependencies must be present in the class
 all required dependencies and it can be used for starting the service right away.
 
 ## Configuration and running the service
-The proxy service expects a configuration file _proxy.properties_ with the following contents:
+The proxy service expects a configuration file (let's call it `proxy.properties`) with the following contents:
 
 ```
 # Name of this connection profile
@@ -34,7 +34,8 @@ backend.port = 1337
 backend.timeout = 30000
 ```
 
-Then start the program by executing `java -jar dapnet-proxy-version.jar`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.
+Then start the program by executing `java -jar dapnet-proxy-version.jar proxy.properties`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.
+It is possible to specify multiple configuration files to manage multiple proxy services with a single program instance.
 
 ## License
 This project is licensed under the GNU GPLv3. See [License](LICENSE.txt) for details.

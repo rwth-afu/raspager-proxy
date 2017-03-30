@@ -29,9 +29,9 @@ public final class Program {
     private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
-        String configFile = "proxy.properties";
-        if (args.length == 1) {
-            configFile = args[0];
+        if (args.length < 1) {
+            LOGGER.log(Level.SEVERE, "No configuration file provided.");
+            System.exit(1);
         }
 
         LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}",
@@ -41,14 +41,24 @@ public final class Program {
             ProxyManager manager = new ProxyManager();
             registerShutdownHook(manager);
 
-            Settings settings = Settings.fromFile(configFile);
-            manager.addService(settings);
+            for (String arg : args) {
+                registerService(manager, arg);
+            }
 
             // Wait for termination
             manager.run();
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);
+        }
+    }
+
+    private static void registerService(ProxyManager manager, String configFile) {
+        try {
+            Settings settings = Settings.fromFile(configFile);
+            manager.addService(settings);
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
         }
     }
 
