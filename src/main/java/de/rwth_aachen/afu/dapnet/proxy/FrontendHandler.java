@@ -16,6 +16,7 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.net.ConnectException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,7 +28,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
-import java.net.ConnectException;
 
 /**
  * The frontend handler is responsible for the connection to the frontend
@@ -38,84 +38,93 @@ import java.net.ConnectException;
  */
 class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
-    private static final Logger LOGGER = Logger.getLogger(FrontendHandler.class.getName());
-    private final Settings settings;
-    private Channel outboundChannel;
+	private static final Logger LOGGER = Logger.getLogger(FrontendHandler.class.getName());
+	private final Settings settings;
+	private final String profileName;
+	private Channel outboundChannel;
 
-    /**
-     * Creates a new frontend handler.
-     *
-     * @param settings Settings instance
-     */
-    public FrontendHandler(Settings settings) {
-        this.settings = settings;
-    }
+	/**
+	 * Creates a new frontend handler.
+	 *
+	 * @param settings
+	 *            Settings instance
+	 */
+	public FrontendHandler(Settings settings) {
+		this.settings = settings;
+		this.profileName = settings.getProfileName();
+	}
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.info("Connected to frontend server.");
+	@Override
+	public void channelActive(ChannelHandlerContext ctx) throws Exception {
+		LOGGER.log(Level.INFO, "{0}: Connected to frontend server.", profileName);
 
-        final Channel inboundChannel = ctx.channel();
+		final Channel inboundChannel = ctx.channel();
 
-        Bootstrap b = new Bootstrap();
-        b.group(inboundChannel.eventLoop());
-        b.channel(ctx.channel().getClass());
-        b.handler(new BackendInitializer(inboundChannel,
-                settings.getBackendTimout()));
-        b.option(ChannelOption.AUTO_READ, false);
+		Bootstrap b = new Bootstrap();
+		b.group(inboundChannel.eventLoop());
+		b.channel(ctx.channel().getClass());
+		b.handler(new BackendInitializer(settings, inboundChannel));
+		b.option(ChannelOption.AUTO_READ, false);
 
-        ChannelFuture f = b.connect(settings.getBackendAddress());
-        outboundChannel = f.channel();
-        f.addListener((ChannelFuture future) -> {
-            if (future.isSuccess()) {
-                inboundChannel.read();
-            } else {
-                inboundChannel.close();
-            }
-        });
-    }
+		ChannelFuture f = b.connect(settings.getBackendAddress());
+		outboundChannel = f.channel();
+		f.addListener((ChannelFuture future) -> {
+			if (future.isSuccess()) {
+				inboundChannel.read();
+			} else {
+				Throwable cause = future.cause();
+				if (cause instanceof ConnectException) {
+					LOGGER.log(Level.SEVERE, profileName + ": Failed to connect to backend: {0}",
+							future.cause().getMessage());
+				} else {
+					LOGGER.log(Level.SEVERE, profileName + ": Failed to connect to backend.", cause);
+				}
 
-    @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-        LOGGER.info("Forwarding message from frontend to backend.");
+				inboundChannel.close();
+			}
+		});
+	}
 
-        if (outboundChannel.isActive()) {
-            outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-                if (future.isSuccess()) {
-                    ctx.channel().read();
-                } else {
-                    future.channel().close();
-                }
-            });
-        } else {
-            LOGGER.warning("Outbound channel not active.");
-        }
-    }
+	@Override
+	protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
+		LOGGER.log(Level.INFO, "{0}: Forwarding message from frontend to backend.", profileName);
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.info("Disconnected from frontend server.");
+		if (outboundChannel.isActive()) {
+			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+				if (future.isSuccess()) {
+					ctx.channel().read();
+				} else {
+					future.channel().close();
+				}
+			});
+		} else {
+			LOGGER.log(Level.WARNING, "{0}: Outbound channel not active.", profileName);
+		}
+	}
 
-        if (outboundChannel != null) {
-            closeOnFlush(outboundChannel);
-        }
-    }
+	@Override
+	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+		LOGGER.log(Level.INFO, "{0}: Disconnected from frontend server.", profileName);
 
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (cause instanceof ConnectException) {
-            LOGGER.log(Level.SEVERE, "Could not connect to backend: {0}",
-                    cause.getMessage());
-        } else {
-            LOGGER.log(Level.SEVERE, "Exception in frontend handler.", cause);
-        }
+		if (outboundChannel != null) {
+			closeOnFlush(outboundChannel);
+		}
+	}
 
-        closeOnFlush(ctx.channel());
-    }
+	@Override
+	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+		if (cause instanceof ConnectException) {
+			LOGGER.log(Level.SEVERE, profileName + ": Could not connect to backend: {0}", cause.getMessage());
+		} else {
+			LOGGER.log(Level.SEVERE, profileName + ": Exception in frontend handler.", cause);
+		}
 
-    static void closeOnFlush(Channel ch) {
-        if (ch.isActive()) {
-            ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        }
-    }
+		closeOnFlush(ctx.channel());
+	}
+
+	static void closeOnFlush(Channel ch) {
+		if (ch.isActive()) {
+			ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+		}
+	}
 }

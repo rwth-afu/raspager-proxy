@@ -22,6 +22,6 @@ package de.rwth_aachen.afu.dapnet.proxy;
  */
 interface ProxyEventListener {
 
-    void onException(ProxyService service, Throwable cause);
+	void onException(ProxyService service, Throwable cause);
 
 }

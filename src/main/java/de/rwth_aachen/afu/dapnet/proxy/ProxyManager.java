@@ -32,72 +32,72 @@ import java.util.logging.Logger;
  */
 final class ProxyManager implements ProxyEventListener, Runnable {
 
-    private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
-    private final Set<ProxyService> services = new HashSet<>();
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
+	private final Set<ProxyService> services = new HashSet<>();
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
 
-    public void addService(Settings settings) {
-        ProxyService service = new ProxyService(settings, workerGroup, this);
+	public void addService(Settings settings) {
+		ProxyService service = new ProxyService(settings, workerGroup, this);
 
-        synchronized (services) {
-            services.add(service);
-        }
+		synchronized (services) {
+			services.add(service);
+		}
 
-        workerGroup.submit(service);
+		workerGroup.submit(service);
 
-        LOGGER.log(Level.INFO, "Added proxy service: {0}", settings.getProfileName());
-    }
+		LOGGER.log(Level.INFO, "Added proxy service: {0}", settings.getProfileName());
+	}
 
-    public void shutdown() {
-        Iterator<ProxyService> it = services.iterator();
-        while (it.hasNext()) {
-            try {
-                ProxyService service = it.next();
-                service.close();
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to close service.", ex);
-            } finally {
-                it.remove();
-            }
-        }
+	public void shutdown() {
+		Iterator<ProxyService> it = services.iterator();
+		while (it.hasNext()) {
+			try {
+				ProxyService service = it.next();
+				service.close();
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to close service.", ex);
+			} finally {
+				it.remove();
+			}
+		}
 
-        workerGroup.shutdownGracefully().syncUninterruptibly();
+		workerGroup.shutdownGracefully().syncUninterruptibly();
 
-        LOGGER.info("Proxy manager has been shut down.");
-    }
+		LOGGER.info("Proxy manager has been shut down.");
+	}
 
-    @Override
-    public void onException(ProxyService service, Throwable cause) {
-        if (cause instanceof ConnectException) {
-            LOGGER.log(Level.SEVERE, "Could not connect to frontend: {0}",
-                    cause.getMessage());
-        } else {
-            LOGGER.log(Level.SEVERE, "Exception in proxy service.", cause);
-        }
+	@Override
+	public void onException(ProxyService service, Throwable cause) {
+		String profileName = service.getSettings().getProfileName();
+		if (cause instanceof ConnectException) {
+			LOGGER.log(Level.SEVERE, profileName + ": Could not connect to frontend: {0}", cause.getMessage());
+		} else {
+			LOGGER.log(Level.SEVERE, profileName + ": Exception in proxy service.", cause);
+		}
 
-        long sleepTime = service.getSettings().getReconnectSleepTime();
-        if (sleepTime > 0) {
-            workerGroup.schedule(service, sleepTime, TimeUnit.MILLISECONDS);
-        } else {
-            try {
-                service.close();
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to close the service.", ex);
-            } finally {
-                synchronized (services) {
-                    services.remove(service);
-                }
-            }
-        }
-    }
+		long sleepTime = service.getSettings().getReconnectSleepTime();
+		if (sleepTime > 0) {
+			workerGroup.schedule(service, sleepTime, TimeUnit.MILLISECONDS);
+		} else {
+			try {
+				service.close();
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, profileName + ": Failed to close the service.", ex);
+			} finally {
+				synchronized (services) {
+					services.remove(service);
+				}
+			}
+		}
+	}
 
-    @Override
-    public void run() {
-        try {
-            workerGroup.terminationFuture().sync();
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
-    }
+	@Override
+	public void run() {
+		try {
+			workerGroup.terminationFuture().sync();
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
+	}
 
 }

@@ -32,66 +32,68 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 final class ProxyService implements Runnable, AutoCloseable {
 
-    private final Settings settings;
-    private final EventLoopGroup workerGroup;
-    private final ProxyEventListener listener;
-    private volatile Channel channel;
+	private final Settings settings;
+	private final EventLoopGroup workerGroup;
+	private final ProxyEventListener listener;
+	private volatile Channel channel;
 
-    /**
-     * Creates a new service instance.
-     *
-     * @param settings Settings instance
-     * @param workerGroup Event loop group to use.
-     * @param listener Proxy event listener
-     */
-    public ProxyService(Settings settings, EventLoopGroup workerGroup,
-            ProxyEventListener listener) {
-        this.settings = settings;
-        this.workerGroup = workerGroup;
-        this.listener = listener;
-    }
+	/**
+	 * Creates a new service instance.
+	 *
+	 * @param settings
+	 *            Settings instance
+	 * @param workerGroup
+	 *            Event loop group to use.
+	 * @param listener
+	 *            Proxy event listener
+	 */
+	public ProxyService(Settings settings, EventLoopGroup workerGroup, ProxyEventListener listener) {
+		this.settings = settings;
+		this.workerGroup = workerGroup;
+		this.listener = listener;
+	}
 
-    /**
-     * Returns the current proxy settings.
-     *
-     * @return Proxy settings.
-     */
-    public Settings getSettings() {
-        return settings;
-    }
+	/**
+	 * Returns the current proxy settings.
+	 *
+	 * @return Proxy settings.
+	 */
+	public Settings getSettings() {
+		return settings;
+	}
 
-    @Override
-    public void run() {
-        try {
-            if (channel != null) {
-                channel.close().syncUninterruptibly();
-            }
+	@Override
+	public void run() {
+		try {
+			if (channel != null) {
+				channel.close().syncUninterruptibly();
+			}
 
-            Bootstrap b = new Bootstrap();
-            b.group(workerGroup);
-            b.channel(NioSocketChannel.class);
-            b.handler(new FrontendInitializer(settings));
-            b.option(ChannelOption.AUTO_READ, false);
+			Bootstrap b = new Bootstrap();
+			b.group(workerGroup);
+			b.channel(NioSocketChannel.class);
+			b.handler(new FrontendInitializer(settings));
+			b.option(ChannelOption.AUTO_READ, false);
 
-            b.connect(settings.getFrontendAddress()).addListener((ChannelFuture f) -> {
-                if (f.isSuccess()) {
-                    channel = f.channel();
-                } else {
-                    channel = null;
-                    listener.onException(this, f.cause());
-                }
-            });
-        } catch (Exception ex) {
-            listener.onException(this, ex);
-        }
-    }
+			b.connect(settings.getFrontendAddress()).addListener((ChannelFuture f) -> {
+				if (f.isSuccess()) {
+					channel = f.channel();
+				} else {
+					channel = null;
+					listener.onException(this, f.cause());
+				}
+			});
+		} catch (Exception ex) {
+			listener.onException(this, ex);
+		}
+	}
 
-    @Override
-    public void close() throws Exception {
-        Channel theChannel = channel;
-        if (theChannel != null) {
-            theChannel.close().syncUninterruptibly();
-        }
-    }
+	@Override
+	public void close() throws Exception {
+		Channel theChannel = channel;
+		if (theChannel != null) {
+			theChannel.close().syncUninterruptibly();
+		}
+	}
 
 }

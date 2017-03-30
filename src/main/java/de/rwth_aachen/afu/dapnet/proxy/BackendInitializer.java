@@ -16,6 +16,8 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.util.concurrent.TimeUnit;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -24,7 +26,6 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class initializes the backend channel pipepline.
@@ -33,31 +34,31 @@ import java.util.concurrent.TimeUnit;
  */
 class BackendInitializer extends ChannelInitializer<SocketChannel> {
 
-    // TODO Use ASCII charset instead?
-    private static final StringDecoder DECODER = new StringDecoder();
-    private static final StringEncoder ENCODER = new StringEncoder();
-    private static final LineBreakAdder LBA = new LineBreakAdder();
-    private final Channel inbound;
-    private final long timeout;
+	// TODO Use ASCII charset instead?
+	private static final StringDecoder DECODER = new StringDecoder();
+	private static final StringEncoder ENCODER = new StringEncoder();
+	private static final LineBreakAdder LBA = new LineBreakAdder();
+	private final Settings settings;
+	private final Channel inbound;
 
-    public BackendInitializer(Channel inbound, long timeout) {
-        this.inbound = inbound;
-        this.timeout = timeout;
-    }
+	public BackendInitializer(Settings settings, Channel inbound) {
+		this.settings = settings;
+		this.inbound = inbound;
+	}
 
-    @Override
-    protected void initChannel(SocketChannel ch) throws Exception {
-        ChannelPipeline p = ch.pipeline();
-        p.addLast(new LineBasedFrameDecoder(1024));
-        p.addLast(DECODER);
-        p.addLast(ENCODER);
-        p.addLast(LBA);
+	@Override
+	protected void initChannel(SocketChannel ch) throws Exception {
+		ChannelPipeline p = ch.pipeline();
+		p.addLast(new LineBasedFrameDecoder(1024));
+		p.addLast(DECODER);
+		p.addLast(ENCODER);
+		p.addLast(LBA);
 
-        if (timeout > 0) {
-            p.addLast(new IdleStateHandler(timeout, 0, 0, TimeUnit.MILLISECONDS));
-        }
+		if (settings.getBackendTimout() > 0) {
+			p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));
+		}
 
-        p.addLast(new BackendHandler(inbound));
-    }
+		p.addLast(new BackendHandler(settings.getProfileName(), inbound));
+	}
 
 }
