@@ -34,31 +34,31 @@ import io.netty.handler.timeout.IdleStateHandler;
  */
 class BackendInitializer extends ChannelInitializer<SocketChannel> {
 
-	// TODO Use ASCII charset instead?
-	private static final StringDecoder DECODER = new StringDecoder();
-	private static final StringEncoder ENCODER = new StringEncoder();
-	private static final LineBreakAdder LBA = new LineBreakAdder();
-	private final Settings settings;
-	private final Channel inbound;
+    // TODO Use ASCII charset instead?
+    private static final StringDecoder DECODER = new StringDecoder();
+    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final LineBreakAdder LBA = new LineBreakAdder();
+    private final Settings settings;
+    private final Channel inbound;
 
-	public BackendInitializer(Settings settings, Channel inbound) {
-		this.settings = settings;
-		this.inbound = inbound;
-	}
+    public BackendInitializer(Settings settings, Channel inbound) {
+        this.settings = settings;
+        this.inbound = inbound;
+    }
 
-	@Override
-	protected void initChannel(SocketChannel ch) throws Exception {
-		ChannelPipeline p = ch.pipeline();
-		p.addLast(new LineBasedFrameDecoder(1024));
-		p.addLast(DECODER);
-		p.addLast(ENCODER);
-		p.addLast(LBA);
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        ChannelPipeline p = ch.pipeline();
+        p.addLast(new LineBasedFrameDecoder(1024));
+        p.addLast(DECODER);
+        p.addLast(ENCODER);
+        p.addLast(LBA);
 
-		if (settings.getBackendTimout() > 0) {
-			p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));
-		}
+        if (settings.getBackendTimout() > 0) {
+            p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));
+        }
 
-		p.addLast(new BackendHandler(settings.getProfileName(), inbound));
-	}
+        p.addLast(new BackendHandler(settings.getProfileName(), inbound));
+    }
 
 }

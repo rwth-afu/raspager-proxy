@@ -30,27 +30,27 @@ import io.netty.handler.codec.string.StringEncoder;
  */
 class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 
-	// TODO Use ASCII charset instead?
-	private static final StringDecoder DECODER = new StringDecoder();
-	private static final StringEncoder ENCODER = new StringEncoder();
-	private static final LineBreakAdder LBA = new LineBreakAdder();
-	private final WelcomeMessageEncoder msgEncoder;
-	private final Settings settings;
+    // TODO Use ASCII charset instead?
+    private static final StringDecoder DECODER = new StringDecoder();
+    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final LineBreakAdder LBA = new LineBreakAdder();
+    private final WelcomeMessageEncoder msgEncoder;
+    private final Settings settings;
 
-	public FrontendInitializer(Settings settings) {
-		this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
-		this.settings = settings;
-	}
+    public FrontendInitializer(Settings settings) {
+        this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
+        this.settings = settings;
+    }
 
-	@Override
-	protected void initChannel(SocketChannel ch) throws Exception {
-		ChannelPipeline p = ch.pipeline();
-		p.addLast(new LineBasedFrameDecoder(1024));
-		p.addLast(DECODER);
-		p.addLast(ENCODER);
-		p.addLast(LBA);
-		p.addLast(msgEncoder);
-		p.addLast(new FrontendHandler(settings));
-	}
+    @Override
+    protected void initChannel(SocketChannel ch) throws Exception {
+        ChannelPipeline p = ch.pipeline();
+        p.addLast(new LineBasedFrameDecoder(1024));
+        p.addLast(DECODER);
+        p.addLast(ENCODER);
+        p.addLast(LBA);
+        p.addLast(msgEncoder);
+        p.addLast(new FrontendHandler(settings));
+    }
 
 }

@@ -22,6 +22,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.Future;
 
 /**
  * The proxy service implementation. This class will act as a bridge between two
@@ -32,68 +33,88 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 final class ProxyService implements Runnable, AutoCloseable {
 
-	private final Settings settings;
-	private final EventLoopGroup workerGroup;
-	private final ProxyEventListener listener;
-	private volatile Channel channel;
+    private final Settings settings;
+    private final EventLoopGroup workerGroup;
+    private final ProxyEventListener listener;
+    private volatile Channel channel;
+    private volatile boolean shutdownRequested = false;
 
-	/**
-	 * Creates a new service instance.
-	 *
-	 * @param settings
-	 *            Settings instance
-	 * @param workerGroup
-	 *            Event loop group to use.
-	 * @param listener
-	 *            Proxy event listener
-	 */
-	public ProxyService(Settings settings, EventLoopGroup workerGroup, ProxyEventListener listener) {
-		this.settings = settings;
-		this.workerGroup = workerGroup;
-		this.listener = listener;
-	}
+    /**
+     * Creates a new service instance.
+     *
+     * @param settings Settings instance
+     * @param workerGroup Event loop group to use.
+     * @param listener Proxy event listener
+     */
+    public ProxyService(Settings settings, EventLoopGroup workerGroup, ProxyEventListener listener) {
+        this.settings = settings;
+        this.workerGroup = workerGroup;
+        this.listener = listener;
+    }
 
-	/**
-	 * Returns the current proxy settings.
-	 *
-	 * @return Proxy settings.
-	 */
-	public Settings getSettings() {
-		return settings;
-	}
+    /**
+     * Returns the current proxy settings.
+     *
+     * @return Proxy settings.
+     */
+    public Settings getSettings() {
+        return settings;
+    }
 
-	@Override
-	public void run() {
-		try {
-			if (channel != null) {
-				channel.close().syncUninterruptibly();
-			}
+    @Override
+    public void run() {
+        shutdownRequested = false;
 
-			Bootstrap b = new Bootstrap();
-			b.group(workerGroup);
-			b.channel(NioSocketChannel.class);
-			b.handler(new FrontendInitializer(settings));
-			b.option(ChannelOption.AUTO_READ, false);
+        try {
+            if (channel != null) {
+                channel.close().syncUninterruptibly();
+            }
 
-			b.connect(settings.getFrontendAddress()).addListener((ChannelFuture f) -> {
-				if (f.isSuccess()) {
-					channel = f.channel();
-				} else {
-					channel = null;
-					listener.onException(this, f.cause());
-				}
-			});
-		} catch (Exception ex) {
-			listener.onException(this, ex);
-		}
-	}
+            Bootstrap b = new Bootstrap();
+            b.group(workerGroup);
+            b.channel(NioSocketChannel.class);
+            b.handler(new FrontendInitializer(settings));
+            b.option(ChannelOption.AUTO_READ, false);
 
-	@Override
-	public void close() throws Exception {
-		Channel theChannel = channel;
-		if (theChannel != null) {
-			theChannel.close().syncUninterruptibly();
-		}
-	}
+            b.connect(settings.getFrontendAddress()).addListener((ChannelFuture f) -> {
+                if (f.isSuccess()) {
+                    channel = f.channel();
+                    channel.closeFuture().addListener(this::forwardCloseEvent);
+                } else {
+                    channel = null;
+                    forwardExceptionEvent(f.cause());
+                }
+            });
+        } catch (Exception ex) {
+            forwardExceptionEvent(ex);
+        }
+    }
+
+    /**
+     * Notifies the proxy event listener that an exception occurred.
+     *
+     * @param t Exception
+     */
+    private void forwardExceptionEvent(Throwable t) {
+        listener.onException(this, t);
+    }
+
+    /**
+     * Notifies the proxy event listener that this service is closed.
+     *
+     * @param f Future (not used).
+     */
+    private void forwardCloseEvent(Future f) {
+        listener.onClose(this, shutdownRequested);
+    }
+
+    @Override
+    public void close() throws Exception {
+        shutdownRequested = true;
+        Channel theChannel = channel;
+        if (theChannel != null) {
+            theChannel.close().syncUninterruptibly();
+        }
+    }
 
 }

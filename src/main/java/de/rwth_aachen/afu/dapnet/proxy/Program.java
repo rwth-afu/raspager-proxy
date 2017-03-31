@@ -26,52 +26,53 @@ import java.util.logging.Logger;
  */
 public final class Program {
 
-	private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
-	public static void main(String[] args) {
-		if (args.length < 1) {
-			LOGGER.log(Level.SEVERE, "No configuration file provided.");
-			System.exit(1);
-		}
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            LOGGER.log(Level.SEVERE, "No configuration file provided.");
+            System.exit(1);
+        }
 
-		LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}", Program.class.getPackage().getImplementationVersion());
+        LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}",
+                Program.class.getPackage().getImplementationVersion());
 
-		try {
-			ProxyManager manager = new ProxyManager();
-			registerShutdownHook(manager);
+        try {
+            ProxyManager manager = new ProxyManager();
+            registerShutdownHook(manager);
 
-			for (String arg : args) {
-				registerService(manager, arg);
-			}
+            for (String arg : args) {
+                registerService(manager, arg);
+            }
 
-			// Wait for termination
-			manager.run();
-		} catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "Exception in main.", ex);
-			System.exit(1);
-		}
-	}
+            // Wait for termination
+            manager.run();
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Exception in main.", ex);
+            System.exit(1);
+        }
+    }
 
-	private static void registerService(ProxyManager manager, String configFile) {
-		try {
-			Settings settings = Settings.fromFile(configFile);
-			manager.addService(settings);
-		} catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
-		}
-	}
+    private static void registerService(ProxyManager manager, String configFile) {
+        try {
+            Settings settings = Settings.fromFile(configFile);
+            manager.addService(settings);
+        } catch (Exception ex) {
+            LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
+        }
+    }
 
-	private static void registerShutdownHook(final ProxyManager manager) {
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				try {
-					manager.shutdown();
-				} catch (Exception ex) {
-					LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
-				}
-			}
-		});
-	}
+    private static void registerShutdownHook(final ProxyManager manager) {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    manager.shutdown();
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
+                }
+            }
+        });
+    }
 
 }

@@ -17,11 +17,27 @@
 package de.rwth_aachen.afu.dapnet.proxy;
 
 /**
+ * This interface defines proxy service events.
  *
  * @author Philipp Thiel
  */
 interface ProxyEventListener {
 
-	void onException(ProxyService service, Throwable cause);
+    /**
+     * Called when a proxy service caught an exception.
+     *
+     * @param service Service instance
+     * @param cause Exception
+     */
+    void onException(ProxyService service, Throwable cause);
+
+    /**
+     * Called when a proxy service is closed.
+     *
+     * @param service Service instance
+     * @param shutdownRequested Whether the shutdown was requested or not. This
+     * can be used to determine if an automatic reconnect should be performed.
+     */
+    void onClose(ProxyService service, boolean shutdownRequested);
 
 }
