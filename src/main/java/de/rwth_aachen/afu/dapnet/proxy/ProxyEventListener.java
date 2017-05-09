@@ -35,9 +35,7 @@ interface ProxyEventListener {
      * Called when a proxy service is closed.
      *
      * @param service Service instance
-     * @param shutdownRequested Whether the shutdown was requested or not. This
-     * can be used to determine if an automatic reconnect should be performed.
      */
-    void onClose(ProxyService service, boolean shutdownRequested);
+    void onClose(ProxyService service);
 
 }

@@ -37,7 +37,6 @@ final class ProxyService implements Runnable, AutoCloseable {
     private final EventLoopGroup workerGroup;
     private final ProxyEventListener listener;
     private volatile Channel channel;
-    private volatile boolean shutdownRequested = false;
 
     /**
      * Creates a new service instance.
@@ -63,8 +62,6 @@ final class ProxyService implements Runnable, AutoCloseable {
 
     @Override
     public void run() {
-        shutdownRequested = false;
-
         try {
             if (channel != null) {
                 channel.close().syncUninterruptibly();
@@ -76,12 +73,12 @@ final class ProxyService implements Runnable, AutoCloseable {
             b.handler(new FrontendInitializer(settings));
             b.option(ChannelOption.AUTO_READ, false);
 
-            b.connect(settings.getFrontendAddress()).addListener((ChannelFuture f) -> {
-                if (f.isSuccess()) {
-                    channel = f.channel();
-                    channel.closeFuture().addListener(this::forwardCloseEvent);
-                } else {
-                    channel = null;
+            ChannelFuture connf = b.connect(settings.getFrontendAddress());
+            channel = connf.channel();
+            channel.closeFuture().addListener(this::forwardCloseEvent);
+
+            connf.addListener((ChannelFuture f) -> {
+                if (!f.isSuccess()) {
                     forwardExceptionEvent(f.cause());
                 }
             });
@@ -105,12 +102,11 @@ final class ProxyService implements Runnable, AutoCloseable {
      * @param f Future (not used).
      */
     private void forwardCloseEvent(Future f) {
-        listener.onClose(this, shutdownRequested);
+        listener.onClose(this);
     }
 
     @Override
     public void close() throws Exception {
-        shutdownRequested = true;
         Channel theChannel = channel;
         if (theChannel != null) {
             theChannel.close().syncUninterruptibly();

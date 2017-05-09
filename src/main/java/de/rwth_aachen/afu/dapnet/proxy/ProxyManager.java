@@ -35,6 +35,7 @@ final class ProxyManager implements ProxyEventListener, Runnable {
     private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
     private final Set<ProxyService> services = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private volatile boolean shutdownRequested = false;
 
     public void addService(Settings settings) {
         ProxyService service = new ProxyService(settings, workerGroup, this);
@@ -50,6 +51,8 @@ final class ProxyManager implements ProxyEventListener, Runnable {
     }
 
     public void shutdown() {
+        shutdownRequested = true;
+
         Iterator<ProxyService> it = services.iterator();
         while (it.hasNext()) {
             try {
@@ -87,7 +90,7 @@ final class ProxyManager implements ProxyEventListener, Runnable {
     }
 
     @Override
-    public void onClose(ProxyService service, boolean shutdownRequested) {
+    public void onClose(ProxyService service) {
         String profileName = service.getSettings().getProfileName();
         long sleepTime = service.getSettings().getReconnectSleepTime();
         if (!shutdownRequested && sleepTime > 0) {

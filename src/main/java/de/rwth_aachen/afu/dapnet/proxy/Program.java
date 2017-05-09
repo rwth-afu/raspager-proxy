@@ -63,16 +63,15 @@ public final class Program {
     }
 
     private static void registerShutdownHook(final ProxyManager manager) {
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    manager.shutdown();
-                } catch (Exception ex) {
-                    LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
-                }
+        Runnable hook = () -> {
+            try {
+                manager.shutdown();
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
             }
-        });
+        };
+
+        Runtime.getRuntime().addShutdownHook(new Thread(hook, "ShutdownHook"));
     }
 
 }
