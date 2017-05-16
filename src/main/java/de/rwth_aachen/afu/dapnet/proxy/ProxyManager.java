@@ -16,94 +16,51 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * This class manages the proxy connections.
  *
  * @author Philipp Thiel
  */
-final class ProxyManager implements ProxyEventListener, Runnable {
+final class ProxyManager implements Runnable {
 
     private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
-    private final Set<ProxyService> services = new HashSet<>();
+    private final Set<ConnectionState> activeStates = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private volatile boolean shutdownRequested = false;
 
-    public void addService(Settings settings) {
-        ProxyService service = new ProxyService(settings, workerGroup, this);
-
-        synchronized (services) {
-            services.add(service);
-        }
-
-        workerGroup.submit(service);
-
-        LOGGER.log(Level.INFO, "{0} Proxy service has been added.",
-                settings.getProfileName());
+    /**
+     * Opens a new proxy connection.
+     *
+     * @param settings Connection settings
+     */
+    public void openConnection(final Settings settings) {
+        workerGroup.submit(() -> doConnect(settings));
     }
 
+    /**
+     * Stops the proxy manager and closes all open connections.
+     */
     public void shutdown() {
         shutdownRequested = true;
 
-        Iterator<ProxyService> it = services.iterator();
-        while (it.hasNext()) {
-            try {
-                ProxyService service = it.next();
-                service.close();
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to close service.", ex);
-            } finally {
-                it.remove();
-            }
-        }
-
-        workerGroup.shutdownGracefully().syncUninterruptibly();
-
+        LOGGER.info("Shutting down proxy manager ...");
+        workerGroup.shutdownGracefully();
         LOGGER.info("Proxy manager has been shut down.");
-    }
-
-    @Override
-    public void onException(ProxyService service, Throwable cause) {
-        String profileName = service.getSettings().getProfileName();
-        if (cause instanceof ConnectException) {
-            LOGGER.log(Level.SEVERE, profileName + " Could not connect to frontend: {0}",
-                    cause.getMessage());
-        } else {
-            LOGGER.log(Level.SEVERE, profileName + " Exception in proxy service.",
-                    cause);
-        }
-
-        try {
-            service.close();
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, service.getSettings().getProfileName()
-                    + " Failed to close the service.", ex);
-        }
-    }
-
-    @Override
-    public void onClose(ProxyService service) {
-        String profileName = service.getSettings().getProfileName();
-        long sleepTime = service.getSettings().getReconnectSleepTime();
-        if (!shutdownRequested && sleepTime > 0) {
-            LOGGER.log(Level.INFO, "{0} Performing reconnect.", profileName);
-            workerGroup.schedule(service, sleepTime, TimeUnit.MILLISECONDS);
-        } else {
-            synchronized (services) {
-                services.remove(service);
-            }
-
-            LOGGER.log(Level.INFO, "{0} Proxy service has been removed.",
-                    profileName);
-        }
     }
 
     @Override
@@ -113,6 +70,86 @@ final class ProxyManager implements ProxyEventListener, Runnable {
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void doConnect(final Settings settings) {
+        Bootstrap b = new Bootstrap();
+        b.group(workerGroup);
+        b.channel(NioSocketChannel.class);
+        b.handler(new FrontendInitializer(settings));
+        b.option(ChannelOption.AUTO_READ, false);
+
+        ChannelFuture connf = b.connect(settings.getFrontendAddress());
+        connf.addListener((ChannelFuture f) -> {
+            if (f.isSuccess()) {
+                onConnectSucceeded(settings, f.channel());
+            } else {
+                f.channel().close();
+                onConnectFailed(settings, f.cause());
+            }
+        });
+    }
+
+    private void onConnectSucceeded(final Settings settings, final Channel channel) {
+        ConnectionState state = new ConnectionState(settings, channel);
+        channel.closeFuture().addListener((f) -> onClose(state));
+
+        synchronized (activeStates) {
+            activeStates.add(state);
+        }
+
+        LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
+    }
+
+    private void onConnectFailed(Settings settings, Throwable ex) {
+        if (ex instanceof ConnectException || ex instanceof UnknownHostException) {
+            LOGGER.log(Level.SEVERE, settings.getProfileName()
+                    + " Could not connect to frontend: {0}", ex.getMessage());
+        } else {
+            LOGGER.log(Level.SEVERE, settings.getProfileName()
+                    + " Could not connect to frontend.", ex);
+        }
+
+        scheduleReconnect(settings);
+    }
+
+    private void onClose(ConnectionState state) {
+        LOGGER.log(Level.INFO, "{0} Connection closed.", state.getSettings().getProfileName());
+
+        synchronized (activeStates) {
+            activeStates.remove(state);
+        }
+
+        scheduleReconnect(state.getSettings());
+    }
+
+    private void scheduleReconnect(final Settings settings) {
+        long sleepTime = settings.getReconnectSleepTime();
+        if (!shutdownRequested && sleepTime > 0) {
+            LOGGER.log(Level.INFO, "{0} Performing reconnect.", settings.getProfileName());
+
+            workerGroup.schedule(() -> doConnect(settings), sleepTime, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private static final class ConnectionState {
+
+        private final Settings settings;
+        private final Channel channel;
+
+        public ConnectionState(Settings settings, Channel channel) {
+            this.settings = settings;
+            this.channel = channel;
+        }
+
+        public Settings getSettings() {
+            return settings;
+        }
+
+        public Channel getChannel() {
+            return channel;
+        }
+
     }
 
 }

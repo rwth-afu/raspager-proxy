@@ -28,7 +28,7 @@ import io.netty.handler.codec.string.StringEncoder;
  *
  * @author Philipp Thiel
  */
-class FrontendInitializer extends ChannelInitializer<SocketChannel> {
+final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 
     // TODO Use ASCII charset instead?
     private static final StringDecoder DECODER = new StringDecoder();

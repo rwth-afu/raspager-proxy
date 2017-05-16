@@ -56,7 +56,7 @@ public final class Program {
     private static void registerService(ProxyManager manager, String configFile) {
         try {
             Settings settings = Settings.fromFile(configFile);
-            manager.addService(settings);
+            manager.openConnection(settings);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
         }

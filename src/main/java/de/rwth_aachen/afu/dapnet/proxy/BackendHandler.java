@@ -31,7 +31,7 @@ import io.netty.handler.timeout.IdleStateEvent;
  *
  * @author Philipp Thiel
  */
-class BackendHandler extends SimpleChannelInboundHandler<String> {
+final class BackendHandler extends SimpleChannelInboundHandler<String> {
 
     private enum State {
         HANDSHAKE, SEND_KEEP_ALIVE, PENDING_KEEP_ALIVE_1, PENDING_KEEP_ALIVE_2

@@ -28,6 +28,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.net.UnknownHostException;
 
 /**
  * The frontend handler is responsible for the connection to the frontend
@@ -36,7 +37,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
  *
  * @author Philipp Thiel
  */
-class FrontendHandler extends SimpleChannelInboundHandler<String> {
+final class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
     private static final Logger LOGGER = Logger.getLogger(FrontendHandler.class.getName());
     private final Settings settings;
@@ -72,7 +73,7 @@ class FrontendHandler extends SimpleChannelInboundHandler<String> {
                 inboundChannel.read();
             } else {
                 Throwable cause = future.cause();
-                if (cause instanceof ConnectException) {
+                if (cause instanceof ConnectException || cause instanceof UnknownHostException) {
                     LOGGER.log(Level.SEVERE, profileName + " Failed to connect to backend: {0}",
                             future.cause().getMessage());
                 } else {

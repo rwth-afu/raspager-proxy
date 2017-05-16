@@ -28,7 +28,7 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 /**
- * This class initializes the backend channel pipepline.
+ * This class initializes the backend channel pipeline.
  *
  * @author Philipp Thiel
  */
