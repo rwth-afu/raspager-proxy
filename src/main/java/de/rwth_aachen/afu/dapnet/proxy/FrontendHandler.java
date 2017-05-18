@@ -40,7 +40,7 @@ import java.net.UnknownHostException;
 final class FrontendHandler extends SimpleChannelInboundHandler<String> {
 
     private static final Logger LOGGER = Logger.getLogger(FrontendHandler.class.getName());
-    private final Settings settings;
+    private final ConnectionSettings settings;
     private final String profileName;
     private Channel outboundChannel;
 
@@ -49,7 +49,7 @@ final class FrontendHandler extends SimpleChannelInboundHandler<String> {
      *
      * @param settings Settings instance
      */
-    public FrontendHandler(Settings settings) {
+    public FrontendHandler(ConnectionSettings settings) {
         this.settings = settings;
         this.profileName = settings.getProfileName();
     }

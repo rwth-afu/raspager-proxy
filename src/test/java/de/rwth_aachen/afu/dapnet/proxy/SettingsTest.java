@@ -32,7 +32,7 @@ public class SettingsTest {
     public void testFromProperties() {
         Properties props = createProperties();
 
-        Settings s = new Settings(props);
+        ConnectionSettings s = new ConnectionSettings(props);
 
         // General
         Assert.assertEquals("profileName", "testProfile", s.getProfileName());

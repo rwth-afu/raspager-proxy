@@ -42,14 +42,24 @@ final class ProxyManager implements Runnable {
     private final Set<ConnectionState> activeStates = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private volatile boolean shutdownRequested = false;
+    private volatile ProxyEventListener listener;
+
+    public void setListener(ProxyEventListener listener) {
+        this.listener = listener;
+    }
 
     /**
      * Opens a new proxy connection.
      *
      * @param settings Connection settings
      */
-    public void openConnection(final Settings settings) {
+    public void openConnection(final ConnectionSettings settings) {
         workerGroup.submit(() -> doConnect(settings));
+
+        ProxyEventListener theListener = listener;
+        if (theListener != null) {
+            theListener.onRegister(settings.getProfileName());
+        }
     }
 
     /**
@@ -72,7 +82,7 @@ final class ProxyManager implements Runnable {
         }
     }
 
-    private void doConnect(final Settings settings) {
+    private void doConnect(final ConnectionSettings settings) {
         Bootstrap b = new Bootstrap();
         b.group(workerGroup);
         b.channel(NioSocketChannel.class);
@@ -90,7 +100,7 @@ final class ProxyManager implements Runnable {
         });
     }
 
-    private void onConnectSucceeded(final Settings settings, final Channel channel) {
+    private void onConnectSucceeded(final ConnectionSettings settings, final Channel channel) {
         ConnectionState state = new ConnectionState(settings, channel);
         channel.closeFuture().addListener((f) -> onClose(state));
 
@@ -99,9 +109,14 @@ final class ProxyManager implements Runnable {
         }
 
         LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
+
+        ProxyEventListener theListener = listener;
+        if (theListener != null) {
+            theListener.onConnect(settings.getProfileName());
+        }
     }
 
-    private void onConnectFailed(Settings settings, Throwable ex) {
+    private void onConnectFailed(ConnectionSettings settings, Throwable ex) {
         if (ex instanceof ConnectException || ex instanceof UnknownHostException) {
             LOGGER.log(Level.SEVERE, settings.getProfileName()
                     + " Could not connect to frontend: {0}", ex.getMessage());
@@ -120,29 +135,38 @@ final class ProxyManager implements Runnable {
             activeStates.remove(state);
         }
 
-        scheduleReconnect(state.getSettings());
+        boolean reconnect = scheduleReconnect(state.getSettings());
+
+        ProxyEventListener theListener = listener;
+        if (theListener != null) {
+            theListener.onDisconnect(state.getSettings().getProfileName(), reconnect);
+        }
     }
 
-    private void scheduleReconnect(final Settings settings) {
+    private boolean scheduleReconnect(final ConnectionSettings settings) {
         long sleepTime = settings.getReconnectSleepTime();
         if (!shutdownRequested && sleepTime > 0) {
             LOGGER.log(Level.INFO, "{0} Performing reconnect.", settings.getProfileName());
 
             workerGroup.schedule(() -> doConnect(settings), sleepTime, TimeUnit.MILLISECONDS);
+
+            return true;
+        } else {
+            return false;
         }
     }
 
     private static final class ConnectionState {
 
-        private final Settings settings;
+        private final ConnectionSettings settings;
         private final Channel channel;
 
-        public ConnectionState(Settings settings, Channel channel) {
+        public ConnectionState(ConnectionSettings settings, Channel channel) {
             this.settings = settings;
             this.channel = channel;
         }
 
-        public Settings getSettings() {
+        public ConnectionSettings getSettings() {
             return settings;
         }
 

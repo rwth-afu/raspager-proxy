@@ -26,6 +26,9 @@ import java.util.logging.Logger;
  */
 public final class Program {
 
+    private static final String START_REST_KEY = "dapnet.proxy.rest.start";
+    private static final String REST_ENDPOINT_KEY = "dapnet.proxy.rest.endpoint";
+    private static final String DEFAULT_ENDPOINT = "http://localhost:8090/";
     private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
@@ -39,7 +42,19 @@ public final class Program {
 
         try {
             ProxyManager manager = new ProxyManager();
-            registerShutdownHook(manager);
+
+            // Start embedded REST server?
+            ProxyStatusManager statusManager = null;
+            if (Boolean.getBoolean(START_REST_KEY)) {
+                statusManager = new ProxyStatusManager();
+                manager.setListener(statusManager);
+
+                String uri = System.getProperty(REST_ENDPOINT_KEY, DEFAULT_ENDPOINT);
+                LOGGER.log(Level.INFO, "Starting REST server on endpoint {0}", uri);
+                statusManager.start(uri);
+            }
+
+            registerShutdownHook(statusManager, manager);
 
             for (String arg : args) {
                 registerService(manager, arg);
@@ -55,17 +70,28 @@ public final class Program {
 
     private static void registerService(ProxyManager manager, String configFile) {
         try {
-            Settings settings = Settings.fromFile(configFile);
+            ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
             manager.openConnection(settings);
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
         }
     }
 
-    private static void registerShutdownHook(final ProxyManager manager) {
+    private static void registerShutdownHook(final ProxyStatusManager statusManager,
+            final ProxyManager manager) {
         Runnable hook = () -> {
             try {
-                manager.shutdown();
+                if (statusManager != null) {
+                    statusManager.shutdown();
+                }
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to stop status manager.", ex);
+            }
+
+            try {
+                if (manager != null) {
+                    manager.shutdown();
+                }
             } catch (Exception ex) {
                 LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
             }

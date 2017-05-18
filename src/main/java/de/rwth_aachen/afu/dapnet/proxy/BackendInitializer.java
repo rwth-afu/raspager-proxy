@@ -38,10 +38,10 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
     private static final StringDecoder DECODER = new StringDecoder();
     private static final StringEncoder ENCODER = new StringEncoder();
     private static final LineBreakAdder LBA = new LineBreakAdder();
-    private final Settings settings;
+    private final ConnectionSettings settings;
     private final Channel inbound;
 
-    public BackendInitializer(Settings settings, Channel inbound) {
+    public BackendInitializer(ConnectionSettings settings, Channel inbound) {
         this.settings = settings;
         this.inbound = inbound;
     }

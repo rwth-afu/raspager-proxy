@@ -24,11 +24,11 @@ import java.net.SocketAddress;
 import java.util.Properties;
 
 /**
- * This class contains the application settings.
+ * This class contains the connection profile settings.
  *
  * @author Philipp Thiel
  */
-final class Settings {
+final class ConnectionSettings {
 
     private final String profileName;
     private final String frontendName;
@@ -45,7 +45,7 @@ final class Settings {
      * @param props Properties to use.
      * @throws NullPointerException If a required settings is not found.
      */
-    public Settings(Properties props) {
+    public ConnectionSettings(Properties props) {
         profileName = getString(props, "profileName");
 
         // Retry sleep time
@@ -72,13 +72,13 @@ final class Settings {
      * @throws FileNotFoundException If the file does not exist.
      * @throws IOException If the file could not be read.
      */
-    public static Settings fromFile(String filename) throws FileNotFoundException, IOException {
+    public static ConnectionSettings fromFile(String filename) throws FileNotFoundException, IOException {
         Properties props = new Properties();
         try (FileInputStream fin = new FileInputStream(filename)) {
             props.load(fin);
         }
 
-        return new Settings(props);
+        return new ConnectionSettings(props);
     }
 
     /**

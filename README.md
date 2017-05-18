@@ -37,5 +37,30 @@ backend.timeout = 30000
 Then start the program by executing `java -jar dapnet-proxy-version.jar proxy.properties`. Note that you must choose the proper file when starting, depending on whether you need the dependencies or not.
 It is possible to specify multiple configuration files to manage multiple proxy services with a single program instance.
 
+## REST API
+The DAPNET proxy features an optional REST API to query the current status of all registered connections via the path `/status`. It is disabled by default. In order to enable it, the system property
+`dapnet.proxy.rest.start=true` must be passed as an JVM option during startup. The endpoint is read from `dapnet.proxy.rest.endpoint`, the default value is `http://localhost:8080/`. Usage example:
+
+```
+java -Ddapnet.proxy.rest.start=true -Ddapnet.proxy.rest.endpoint=http://localhost:8081/ -jar dapnet-proxy-version.jar proxy.properties
+```
+
+A GET on `/status` returns a JSON array containing the following information (one JSON object per loaded proxy properties file):
+
+```
+[
+  {
+    "profileName": "Server1",
+    "lastUpdate": "2017-05-18T13:17:36.933Z",
+    "connectedSince": null,
+    "state": "CONNECTING"
+  }
+]
+```
+
+The field `profileName` contains the profile name taken from the properties file, `lastUpdate` contains the timestamp of the last status change and `connectedSince` contains the timestamp when
+the connection has been established (`null` if not connected). The `state` field may contain `CONNECTING` when a connection attempt is pending, `ONLINE` if a connection has been established or
+`OFFLINE` if a connection is permanently closed (no reconnect configured).
+
 ## License
 This project is licensed under the GNU GPLv3. See [License](LICENSE.txt) for details.

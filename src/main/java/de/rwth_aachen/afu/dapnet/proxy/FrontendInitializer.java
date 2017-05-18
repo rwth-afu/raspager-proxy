@@ -35,9 +35,9 @@ final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
     private static final StringEncoder ENCODER = new StringEncoder();
     private static final LineBreakAdder LBA = new LineBreakAdder();
     private final WelcomeMessageEncoder msgEncoder;
-    private final Settings settings;
+    private final ConnectionSettings settings;
 
-    public FrontendInitializer(Settings settings) {
+    public FrontendInitializer(ConnectionSettings settings) {
         this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
         this.settings = settings;
     }
