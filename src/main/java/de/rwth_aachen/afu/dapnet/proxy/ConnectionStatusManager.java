@@ -31,12 +31,12 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
 /**
- * This class provides an embedded REST server for querying proxy status
+ * This class provides an embedded REST server for querying connection status
  * information.
  *
  * @author Philipp Thiel
  */
-final class ProxyStatusManager implements ProxyEventListener {
+final class ConnectionStatusManager implements ProxyEventListener {
 
     private final ConcurrentMap<String, ConnectionStatus> connections = new ConcurrentHashMap<>();
     private volatile HttpServer server;
@@ -93,6 +93,17 @@ final class ProxyStatusManager implements ProxyEventListener {
     }
 
     /**
+     * Gets a connection status object.
+     *
+     * @param name Name of the connection profile. A case-sensitive lookup is
+     * performed.
+     * @return Connection status object or {@code null} if name not found.
+     */
+    public ConnectionStatus get(String name) {
+        return connections.get(name);
+    }
+
+    /**
      * Starts the REST server on the given port. The server will listen on all
      * interfaces.
      *
@@ -103,7 +114,7 @@ final class ProxyStatusManager implements ProxyEventListener {
         properties.put("proxyStatusManager", this);
 
         URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
-        ResourceConfig config = new ResourceConfig(ProxyStatusResource.class,
+        ResourceConfig config = new ResourceConfig(ConnectionStatusResource.class,
                 JacksonFeature.class);
         config.addProperties(properties);
 

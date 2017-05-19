@@ -40,10 +40,10 @@ public final class Program {
 
         try {
             // Start embedded REST server?
-            ProxyStatusManager statusManager = null;
+            ConnectionStatusManager statusManager = null;
             Integer port = Integer.getInteger(REST_PORT_KEY);
             if (port != null) {
-                statusManager = new ProxyStatusManager();
+                statusManager = new ConnectionStatusManager();
                 LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
                 statusManager.start(port);
             }
