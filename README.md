@@ -45,6 +45,8 @@ The DAPNET proxy features an optional REST API to query the current status of al
 java -Ddapnet.proxy.rest.start=true -Ddapnet.proxy.rest.endpoint=http://localhost:8081/ -jar dapnet-proxy-version.jar proxy.properties
 ```
 
+This will start the REST server bound to the loopback interface (127.0.0.1 for IPv4), to listen on all interfaces use `http://0.0.0.0:8080/` instead.
+
 A GET on `/status` returns a JSON array containing the following information (one JSON object per loaded proxy properties file):
 
 ```
