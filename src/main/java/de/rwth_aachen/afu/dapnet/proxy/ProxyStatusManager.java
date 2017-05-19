@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.ws.rs.core.UriBuilder;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
@@ -87,15 +88,16 @@ final class ProxyStatusManager implements ProxyEventListener {
     }
 
     /**
-     * Starts the REST server on the given endpoint.
+     * Starts the REST server on the given port. The server will listen on all
+     * interfaces.
      *
-     * @param uri Endpoint URI
+     * @param port Port to listen on.
      */
-    public void start(String uri) {
+    public void start(int port) {
         Map<String, Object> properties = new HashMap<>();
         properties.put("proxyStatusManager", this);
 
-        URI baseUri = URI.create(uri);
+        URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
         ResourceConfig config = new ResourceConfig(ProxyStatusResource.class,
                 JacksonFeature.class);
         config.addProperties(properties);

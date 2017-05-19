@@ -39,13 +39,11 @@ It is possible to specify multiple configuration files to manage multiple proxy 
 
 ## REST API
 The DAPNET proxy features an optional REST API to query the current status of all registered connections via the path `/status`. It is disabled by default. In order to enable it, the system property
-`dapnet.proxy.rest.start=true` must be passed as an JVM option during startup. The endpoint is read from `dapnet.proxy.rest.endpoint`, the default value is `http://localhost:8080/`. Usage example:
+`dapnet.proxy.rest.start=true` must be passed as an JVM option during startup. The port number is read from `dapnet.proxy.rest.port`, the default value is 8080. Usage example:
 
 ```
-java -Ddapnet.proxy.rest.start=true -Ddapnet.proxy.rest.endpoint=http://localhost:8081/ -jar dapnet-proxy-version.jar proxy.properties
+java -Ddapnet.proxy.rest.start=true -Ddapnet.proxy.rest.port=8080 -jar dapnet-proxy-version.jar proxy.properties
 ```
-
-This will start the REST server bound to the loopback interface (127.0.0.1 for IPv4), to listen on all interfaces use `http://0.0.0.0:8080/` instead.
 
 A GET on `/status` returns a JSON array containing the following information (one JSON object per loaded proxy properties file):
 

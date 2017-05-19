@@ -26,9 +26,8 @@ import java.util.logging.Logger;
  */
 public final class Program {
 
-    private static final String START_REST_KEY = "dapnet.proxy.rest.start";
-    private static final String REST_ENDPOINT_KEY = "dapnet.proxy.rest.endpoint";
-    private static final String DEFAULT_ENDPOINT = "http://localhost:8090/";
+    private static final String REST_START_KEY = "dapnet.proxy.rest.start";
+    private static final String REST_PORT_KEY = "dapnet.proxy.rest.port";
     private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
     public static void main(String[] args) {
@@ -45,13 +44,13 @@ public final class Program {
 
             // Start embedded REST server?
             ProxyStatusManager statusManager = null;
-            if (Boolean.getBoolean(START_REST_KEY)) {
+            if (Boolean.getBoolean(REST_START_KEY)) {
                 statusManager = new ProxyStatusManager();
                 manager.setListener(statusManager);
 
-                String uri = System.getProperty(REST_ENDPOINT_KEY, DEFAULT_ENDPOINT);
-                LOGGER.log(Level.INFO, "Starting REST server on endpoint {0}", uri);
-                statusManager.start(uri);
+                int port = Integer.getInteger(REST_PORT_KEY, 8080);
+                LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
+                statusManager.start(port);
             }
 
             registerShutdownHook(statusManager, manager);
