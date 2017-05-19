@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.ws.rs.core.UriBuilder;
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -113,11 +114,20 @@ final class ConnectionStatusManager implements ProxyEventListener {
         Map<String, Object> properties = new HashMap<>();
         properties.put("proxyStatusManager", this);
 
+        // Endpoint configuration
         URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
+
+        // Resource configuration
         ResourceConfig config = new ResourceConfig(ConnectionStatusResource.class,
                 JacksonFeature.class);
-        config.addProperties(properties);
+        config.register(new AbstractBinder() {
+            @Override
+            protected void configure() {
+                bind(ConnectionStatusManager.this).to(ConnectionStatusManager.class);
+            }
+        });
 
+        // Start the server
         server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
     }
 
@@ -130,4 +140,5 @@ final class ConnectionStatusManager implements ProxyEventListener {
             theServer.shutdown();
         }
     }
+
 }
