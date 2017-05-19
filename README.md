@@ -62,5 +62,7 @@ The field `profileName` contains the profile name taken from the properties file
 the connection has been established (`null` if not connected). The `state` field may contain `CONNECTING` when a connection attempt is pending, `ONLINE` if a connection has been established or
 `OFFLINE` if a connection is permanently closed (no reconnect configured).
 
+It is also possible to query the status of a single connection by adding the connection profile name to the path, e.g. `/status/Server1`. Note that the profile name is case-sensitive.
+
 ## License
 This project is licensed under the GNU GPLv3. See [License](LICENSE.txt) for details.
