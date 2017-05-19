@@ -78,6 +78,11 @@ final class ProxyStatusManager implements ProxyEventListener {
         }
     }
 
+    @Override
+    public void onShutdown() {
+        shutdown();
+    }
+
     /**
      * Gets an unmodifiable collection of all loaded connections.
      *

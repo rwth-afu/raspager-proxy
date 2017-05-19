@@ -39,27 +39,24 @@ public final class Program {
                 Program.class.getPackage().getImplementationVersion());
 
         try {
-            ProxyManager manager = new ProxyManager();
-
             // Start embedded REST server?
             ProxyStatusManager statusManager = null;
-            Integer port;
-            if ((port = Integer.getInteger(REST_PORT_KEY)) != null) {
+            Integer port = Integer.getInteger(REST_PORT_KEY);
+            if (port != null) {
                 statusManager = new ProxyStatusManager();
-                manager.setListener(statusManager);
-
                 LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
                 statusManager.start(port);
             }
 
-            registerShutdownHook(statusManager, manager);
+            ProxyManager proxyManager = new ProxyManager(statusManager);
+            registerShutdownHook(proxyManager);
 
             for (String arg : args) {
-                registerService(manager, arg);
+                registerService(proxyManager, arg);
             }
 
             // Wait for termination
-            manager.run();
+            proxyManager.run();
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);
@@ -75,17 +72,8 @@ public final class Program {
         }
     }
 
-    private static void registerShutdownHook(final ProxyStatusManager statusManager,
-            final ProxyManager manager) {
+    private static void registerShutdownHook(final ProxyManager manager) {
         Runnable hook = () -> {
-            try {
-                if (statusManager != null) {
-                    statusManager.shutdown();
-                }
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to stop status manager.", ex);
-            }
-
             try {
                 if (manager != null) {
                     manager.shutdown();

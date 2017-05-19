@@ -41,10 +41,15 @@ final class ProxyManager implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
     private final Set<ConnectionState> activeStates = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+    private final ProxyEventListener listener;
     private volatile boolean shutdownRequested = false;
-    private volatile ProxyEventListener listener;
 
-    public void setListener(ProxyEventListener listener) {
+    /**
+     * Creates a new proxy manager instance.
+     *
+     * @param listener Proxy event listener to use.
+     */
+    public ProxyManager(ProxyEventListener listener) {
         this.listener = listener;
     }
 
@@ -56,9 +61,8 @@ final class ProxyManager implements Runnable {
     public void openConnection(final ConnectionSettings settings) {
         workerGroup.submit(() -> doConnect(settings));
 
-        ProxyEventListener theListener = listener;
-        if (theListener != null) {
-            theListener.onRegister(settings.getProfileName());
+        if (listener != null) {
+            listener.onRegister(settings.getProfileName());
         }
     }
 
@@ -69,7 +73,17 @@ final class ProxyManager implements Runnable {
         shutdownRequested = true;
 
         LOGGER.info("Shutting down proxy manager ...");
+
+        if (listener != null) {
+            try {
+                listener.onShutdown();
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE, "Failed to shut down proxy event listener.", ex);
+            }
+        }
+
         workerGroup.shutdownGracefully();
+
         LOGGER.info("Proxy manager has been shut down.");
     }
 
@@ -102,7 +116,7 @@ final class ProxyManager implements Runnable {
 
     private void onConnectSucceeded(final ConnectionSettings settings, final Channel channel) {
         ConnectionState state = new ConnectionState(settings, channel);
-        channel.closeFuture().addListener((f) -> onClose(state));
+        channel.closeFuture().addListener(f -> onClose(state));
 
         synchronized (activeStates) {
             activeStates.add(state);
@@ -110,9 +124,8 @@ final class ProxyManager implements Runnable {
 
         LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
 
-        ProxyEventListener theListener = listener;
-        if (theListener != null) {
-            theListener.onConnect(settings.getProfileName());
+        if (listener != null) {
+            listener.onConnect(settings.getProfileName());
         }
     }
 
@@ -137,9 +150,8 @@ final class ProxyManager implements Runnable {
 
         boolean reconnect = scheduleReconnect(state.getSettings());
 
-        ProxyEventListener theListener = listener;
-        if (theListener != null) {
-            theListener.onDisconnect(state.getSettings().getProfileName(), reconnect);
+        if (listener != null) {
+            listener.onDisconnect(state.getSettings().getProfileName(), reconnect);
         }
     }
 
