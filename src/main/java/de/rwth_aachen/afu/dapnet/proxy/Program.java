@@ -54,9 +54,6 @@ public final class Program {
             for (String arg : args) {
                 registerService(proxyManager, arg);
             }
-
-            // Wait for termination
-            proxyManager.run();
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Exception in main.", ex);
             System.exit(1);

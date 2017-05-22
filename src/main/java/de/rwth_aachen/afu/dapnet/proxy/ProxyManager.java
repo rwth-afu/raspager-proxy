@@ -36,7 +36,7 @@ import java.util.logging.Logger;
  *
  * @author Philipp Thiel
  */
-final class ProxyManager implements Runnable {
+final class ProxyManager {
 
     private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
     private final Set<ConnectionState> activeStates = new HashSet<>();
@@ -85,15 +85,6 @@ final class ProxyManager implements Runnable {
         workerGroup.shutdownGracefully();
 
         LOGGER.info("Proxy manager has been shut down.");
-    }
-
-    @Override
-    public void run() {
-        try {
-            workerGroup.terminationFuture().sync();
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     private void doConnect(final ConnectionSettings settings) {
