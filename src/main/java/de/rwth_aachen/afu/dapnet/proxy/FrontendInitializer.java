@@ -22,6 +22,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import java.nio.charset.StandardCharsets;
 
 /**
  * This class initializes the frontend channel pipeline.
@@ -30,9 +31,8 @@ import io.netty.handler.codec.string.StringEncoder;
  */
 final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 
-    // TODO Use ASCII charset instead?
-    private static final StringDecoder DECODER = new StringDecoder();
-    private static final StringEncoder ENCODER = new StringEncoder();
+    private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
+    private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
     private static final LineBreakAdder LBA = new LineBreakAdder();
     private final WelcomeMessageEncoder msgEncoder;
     private final ConnectionSettings settings;
