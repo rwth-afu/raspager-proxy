@@ -25,8 +25,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +37,6 @@ import java.util.logging.Logger;
 final class ProxyManager {
 
     private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
-    private final Set<ConnectionState> activeStates = new HashSet<>();
     private final EventLoopGroup workerGroup = new NioEventLoopGroup();
     private final ProxyEventListener listener;
     private volatile boolean shutdownRequested = false;
@@ -106,12 +103,7 @@ final class ProxyManager {
     }
 
     private void onConnectSucceeded(final ConnectionSettings settings, final Channel channel) {
-        ConnectionState state = new ConnectionState(settings, channel);
-        channel.closeFuture().addListener(f -> onClose(state));
-
-        synchronized (activeStates) {
-            activeStates.add(state);
-        }
+        channel.closeFuture().addListener(f -> onClose(settings));
 
         LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
 
@@ -132,17 +124,13 @@ final class ProxyManager {
         scheduleReconnect(settings);
     }
 
-    private void onClose(ConnectionState state) {
-        LOGGER.log(Level.INFO, "{0} Connection closed.", state.getSettings().getProfileName());
+    private void onClose(ConnectionSettings settings) {
+        LOGGER.log(Level.INFO, "{0} Connection closed.", settings.getProfileName());
 
-        synchronized (activeStates) {
-            activeStates.remove(state);
-        }
-
-        boolean reconnect = scheduleReconnect(state.getSettings());
+        boolean reconnect = scheduleReconnect(settings);
 
         if (listener != null) {
-            listener.onDisconnect(state.getSettings().getProfileName(), reconnect);
+            listener.onDisconnect(settings.getProfileName(), reconnect);
         }
     }
 
@@ -157,26 +145,6 @@ final class ProxyManager {
         } else {
             return false;
         }
-    }
-
-    private static final class ConnectionState {
-
-        private final ConnectionSettings settings;
-        private final Channel channel;
-
-        public ConnectionState(ConnectionSettings settings, Channel channel) {
-            this.settings = settings;
-            this.channel = channel;
-        }
-
-        public ConnectionSettings getSettings() {
-            return settings;
-        }
-
-        public Channel getChannel() {
-            return channel;
-        }
-
     }
 
 }
