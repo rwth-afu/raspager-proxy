@@ -1,0 +1,13 @@
+[Unit]
+Description=DAPNET Proxy for AX.25
+Requires=xinetd.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/raspager-proxy/config
+ExecStart=/usr/bin/java -Ddapnet.proxy.rest.port=8080 -jar ../target/dapnet-proxy-1.1.1-SNAPSHOT-jar-with-dependencies.jar db0dy.properties
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=multi-user.target
