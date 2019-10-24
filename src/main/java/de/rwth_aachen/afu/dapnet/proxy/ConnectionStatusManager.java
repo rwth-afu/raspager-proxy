@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.ws.rs.core.UriBuilder;
 import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
+import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -39,106 +39,104 @@ import org.glassfish.jersey.server.ResourceConfig;
  */
 final class ConnectionStatusManager implements ProxyEventListener {
 
-    private final ConcurrentMap<String, ConnectionStatus> connections = new ConcurrentHashMap<>();
-    private volatile HttpServer server;
+	private final ConcurrentMap<String, ConnectionStatus> connections = new ConcurrentHashMap<>();
+	private volatile HttpServer server;
 
-    @Override
-    public void onRegister(String profileName) {
-        ConnectionStatus status = new ConnectionStatus(profileName);
-        status.setLastUpdate(Instant.now());
+	@Override
+	public void onRegister(String profileName) {
+		ConnectionStatus status = new ConnectionStatus(profileName);
+		status.setLastUpdate(Instant.now());
 
-        connections.put(profileName, status);
-    }
+		connections.put(profileName, status);
+	}
 
-    @Override
-    public void onConnect(String profileName) {
-        ConnectionStatus status = connections.get(profileName);
-        if (status != null) {
-            synchronized (status) {
-                Instant now = Instant.now();
+	@Override
+	public void onConnect(String profileName) {
+		ConnectionStatus status = connections.get(profileName);
+		if (status != null) {
+			synchronized (status) {
+				Instant now = Instant.now();
 
-                status.setLastUpdate(now);
-                status.setConnectedSince(now);
-                status.setState(ConnectionStatus.State.ONLINE);
-            }
-        }
-    }
+				status.setLastUpdate(now);
+				status.setConnectedSince(now);
+				status.setState(ConnectionStatus.State.ONLINE);
+			}
+		}
+	}
 
-    @Override
-    public void onDisconnect(String profileName, boolean reconnect) {
-        ConnectionStatus status = connections.get(profileName);
-        if (status != null) {
-            synchronized (status) {
-                Instant now = Instant.now();
+	@Override
+	public void onDisconnect(String profileName, boolean reconnect) {
+		ConnectionStatus status = connections.get(profileName);
+		if (status != null) {
+			synchronized (status) {
+				Instant now = Instant.now();
 
-                status.setLastUpdate(now);
-                status.setConnectedSince(null);
-                status.setState(reconnect ? ConnectionStatus.State.CONNECTING
-                        : ConnectionStatus.State.OFFLINE);
-            }
-        }
-    }
+				status.setLastUpdate(now);
+				status.setConnectedSince(null);
+				status.setState(reconnect ? ConnectionStatus.State.CONNECTING : ConnectionStatus.State.OFFLINE);
+			}
+		}
+	}
 
-    @Override
-    public void onShutdown() {
-        shutdown();
-    }
+	@Override
+	public void onShutdown() {
+		shutdown();
+	}
 
-    /**
-     * Gets an unmodifiable collection of all loaded connections.
-     *
-     * @return Collection of loaded connections.
-     */
-    public Collection<ConnectionStatus> getConnections() {
-        return Collections.unmodifiableCollection(connections.values());
-    }
+	/**
+	 * Gets an unmodifiable collection of all loaded connections.
+	 *
+	 * @return Collection of loaded connections.
+	 */
+	public Collection<ConnectionStatus> getConnections() {
+		return Collections.unmodifiableCollection(connections.values());
+	}
 
-    /**
-     * Gets a connection status object.
-     *
-     * @param name Name of the connection profile. A case-sensitive lookup is
-     * performed.
-     * @return Connection status object or {@code null} if name not found.
-     */
-    public ConnectionStatus get(String name) {
-        return connections.get(name);
-    }
+	/**
+	 * Gets a connection status object.
+	 *
+	 * @param name Name of the connection profile. A case-sensitive lookup is
+	 *             performed.
+	 * @return Connection status object or {@code null} if name not found.
+	 */
+	public ConnectionStatus get(String name) {
+		return connections.get(name);
+	}
 
-    /**
-     * Starts the REST server on the given port. The server will listen on all
-     * interfaces.
-     *
-     * @param port Port to listen on.
-     */
-    public void start(int port) {
-        Map<String, Object> properties = new HashMap<>();
-        properties.put("proxyStatusManager", this);
+	/**
+	 * Starts the REST server on the given port. The server will listen on all
+	 * interfaces.
+	 *
+	 * @param port Port to listen on.
+	 */
+	public void start(int port) {
+		Map<String, Object> properties = new HashMap<>();
+		properties.put("proxyStatusManager", this);
 
-        // Endpoint configuration
-        URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
+		// Endpoint configuration
+		URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
 
-        // Resource configuration
-        ResourceConfig config = new ResourceConfig(ConnectionStatusResource.class,
-                JacksonFeature.class);
-        config.register(new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bind(ConnectionStatusManager.this).to(ConnectionStatusManager.class);
-            }
-        });
+		// Resource configuration
+		ResourceConfig config = new ResourceConfig(ConnectionStatusResource.class, JacksonFeature.class);
+		config.register(new AbstractBinder() {
+			@Override
+			protected void configure() {
+				bind(ConnectionStatusManager.this).to(ConnectionStatusManager.class);
+			}
+		});
 
-        // Start the server
-        server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
-    }
+		// Start the server
+		server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
+	}
 
-    /**
-     * Stops the REST server.
-     */
-    public void shutdown() {
-        HttpServer theServer = server;
-        if (theServer != null) {
-            theServer.shutdown();
-        }
-    }
+	/**
+	 * Stops the REST server.
+	 */
+	public void shutdown() {
+		HttpServer theServer = server;
+		if (theServer != null) {
+			theServer.shutdown();
+		}
+	}
 
 }
