@@ -17,6 +17,7 @@
 package de.rwth_aachen.afu.dapnet.proxy;
 
 import java.util.Collection;
+
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -33,27 +34,27 @@ import javax.ws.rs.core.Response;
 @Path("status")
 public class ConnectionStatusResource {
 
-    @Inject
-    private ConnectionStatusManager manager;
+	@Inject
+	private ConnectionStatusManager manager;
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response get() {
-        Collection<ConnectionStatus> active = manager.getConnections();
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response get() {
+		Collection<ConnectionStatus> active = manager.getConnections();
 
-        return Response.ok(active).build();
-    }
+		return Response.ok(active).build();
+	}
 
-    @GET
-    @Path("{name}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response get(@PathParam("name") String name) {
-        ConnectionStatus status = manager.get(name);
-        if (status != null) {
-            return Response.ok(status).build();
-        } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-    }
+	@GET
+	@Path("{name}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response get(@PathParam("name") String name) {
+		ConnectionStatus status = manager.get(name);
+		if (status != null) {
+			return Response.ok(status).build();
+		} else {
+			return Response.status(Response.Status.NOT_FOUND).build();
+		}
+	}
 
 }

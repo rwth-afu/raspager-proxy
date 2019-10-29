@@ -31,39 +31,39 @@ import io.netty.handler.codec.MessageToMessageEncoder;
  */
 final class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
-    private static final Pattern WELCOME_PATTERN = Pattern
-            .compile("\\[([/\\p{Alnum}]+) v?(\\d[\\d\\.]+[\\p{Graph}]*)\\]");
-    private final String authName;
-    private final String authKey;
+	private static final Pattern WELCOME_PATTERN = Pattern
+			.compile("\\[([/\\p{Alnum}]+) v?(\\d[\\d\\.]+[\\p{Graph}]*)\\]");
+	private final String authName;
+	private final String authKey;
 
-    /**
-     * Creates a new handler instance.
-     *
-     * @param authKey Authentication key to use. This must not be null or empty.
-     */
-    public WelcomeMessageEncoder(String authName, String authKey) {
-        if (authName == null || authName.isEmpty()) {
-            throw new NullPointerException("name");
-        } else if (authKey == null || authKey.isEmpty()) {
-            throw new NullPointerException("authKey");
-        }
+	/**
+	 * Creates a new handler instance.
+	 *
+	 * @param authKey Authentication key to use. This must not be null or empty.
+	 */
+	public WelcomeMessageEncoder(String authName, String authKey) {
+		if (authName == null || authName.isEmpty()) {
+			throw new NullPointerException("name");
+		} else if (authKey == null || authKey.isEmpty()) {
+			throw new NullPointerException("authKey");
+		}
 
-        this.authName = authName;
-        this.authKey = authKey;
-    }
+		this.authName = authName;
+		this.authKey = authKey;
+	}
 
-    @Override
-    protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
-        Matcher m = WELCOME_PATTERN.matcher(msg);
-        if (m.matches()) {
-            String response = String.format("[%s v%s %s %s]", m.group(1), m.group(2), authName, authKey);
-            out.add(response);
+	@Override
+	protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
+		Matcher m = WELCOME_PATTERN.matcher(msg);
+		if (m.matches()) {
+			String response = String.format("[%s v%s %s %s]", m.group(1), m.group(2), authName, authKey);
+			out.add(response);
 
-            ctx.pipeline().remove(this);
-        } else {
-            // Forward the message
-            out.add(msg);
-        }
-    }
+			ctx.pipeline().remove(this);
+		} else {
+			// Forward the message
+			out.add(msg);
+		}
+	}
 
 }

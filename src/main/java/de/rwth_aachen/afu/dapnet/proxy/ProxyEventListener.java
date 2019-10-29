@@ -23,30 +23,30 @@ package de.rwth_aachen.afu.dapnet.proxy;
  */
 interface ProxyEventListener {
 
-    /**
-     * Called when a proxy connection profile is registered.
-     *
-     * @param profileName Profile name
-     */
-    void onRegister(String profileName);
+	/**
+	 * Called when a proxy connection profile is registered.
+	 *
+	 * @param profileName Profile name
+	 */
+	void onRegister(String profileName);
 
-    /**
-     * Called when a proxy connection has been established.
-     *
-     * @param profileName Profile name
-     */
-    void onConnect(String profileName);
+	/**
+	 * Called when a proxy connection has been established.
+	 *
+	 * @param profileName Profile name
+	 */
+	void onConnect(String profileName);
 
-    /**
-     * Called when a proxy connection has been closed.
-     *
-     * @param profileName Profile name
-     * @param reconnect Whether a reconnect attempt is made or not.
-     */
-    void onDisconnect(String profileName, boolean reconnect);
+	/**
+	 * Called when a proxy connection has been closed.
+	 *
+	 * @param profileName Profile name
+	 * @param reconnect   Whether a reconnect attempt is made or not.
+	 */
+	void onDisconnect(String profileName, boolean reconnect);
 
-    /**
-     * Called when the proxy manager is shutting down.
-     */
-    void onShutdown();
+	/**
+	 * Called when the proxy manager is shutting down.
+	 */
+	void onShutdown();
 }

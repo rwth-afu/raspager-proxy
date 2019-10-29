@@ -26,61 +26,60 @@ import java.util.logging.Logger;
  */
 public final class Program {
 
-    private static final String REST_PORT_KEY = "dapnet.proxy.rest.port";
-    private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
+	private static final String REST_PORT_KEY = "dapnet.proxy.rest.port";
+	private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
-    public static void main(String[] args) {
-        if (args.length < 1) {
-            LOGGER.log(Level.SEVERE, "No configuration file provided.");
-            System.exit(1);
-        }
+	public static void main(String[] args) {
+		if (args.length < 1) {
+			LOGGER.log(Level.SEVERE, "No configuration file provided.");
+			System.exit(1);
+		}
 
-        LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}",
-                Program.class.getPackage().getImplementationVersion());
+		LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}", Program.class.getPackage().getImplementationVersion());
 
-        try {
-            // Start embedded REST server?
-            ConnectionStatusManager statusManager = null;
-            Integer port = Integer.getInteger(REST_PORT_KEY);
-            if (port != null) {
-                statusManager = new ConnectionStatusManager();
-                LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
-                statusManager.start(port);
-            }
+		try {
+			// Start embedded REST server?
+			ConnectionStatusManager statusManager = null;
+			Integer port = Integer.getInteger(REST_PORT_KEY);
+			if (port != null) {
+				statusManager = new ConnectionStatusManager();
+				LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
+				statusManager.start(port);
+			}
 
-            ProxyManager proxyManager = new ProxyManager(statusManager);
-            registerShutdownHook(proxyManager);
+			ProxyManager proxyManager = new ProxyManager(statusManager);
+			registerShutdownHook(proxyManager);
 
-            for (String arg : args) {
-                registerService(proxyManager, arg);
-            }
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Exception in main.", ex);
-            System.exit(1);
-        }
-    }
+			for (String arg : args) {
+				registerService(proxyManager, arg);
+			}
+		} catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, "Exception in main.", ex);
+			System.exit(1);
+		}
+	}
 
-    private static void registerService(ProxyManager manager, String configFile) {
-        try {
-            ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
-            manager.openConnection(settings);
-        } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
-        }
-    }
+	private static void registerService(ProxyManager manager, String configFile) {
+		try {
+			ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
+			manager.openConnection(settings);
+		} catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
+		}
+	}
 
-    private static void registerShutdownHook(final ProxyManager manager) {
-        Runnable hook = () -> {
-            try {
-                if (manager != null) {
-                    manager.shutdown();
-                }
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
-            }
-        };
+	private static void registerShutdownHook(final ProxyManager manager) {
+		Runnable hook = () -> {
+			try {
+				if (manager != null) {
+					manager.shutdown();
+				}
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
+			}
+		};
 
-        Runtime.getRuntime().addShutdownHook(new Thread(hook, "ShutdownHook"));
-    }
+		Runtime.getRuntime().addShutdownHook(new Thread(hook, "ShutdownHook"));
+	}
 
 }

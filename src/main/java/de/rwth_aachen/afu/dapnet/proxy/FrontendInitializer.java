@@ -16,13 +16,14 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.nio.charset.StandardCharsets;
+
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * This class initializes the frontend channel pipeline.
@@ -31,26 +32,26 @@ import java.nio.charset.StandardCharsets;
  */
 final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 
-    private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
-    private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
-    private static final LineBreakAdder LBA = new LineBreakAdder();
-    private final WelcomeMessageEncoder msgEncoder;
-    private final ConnectionSettings settings;
+	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
+	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
+	private static final LineBreakAdder LBA = new LineBreakAdder();
+	private final WelcomeMessageEncoder msgEncoder;
+	private final ConnectionSettings settings;
 
-    public FrontendInitializer(ConnectionSettings settings) {
-        this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
-        this.settings = settings;
-    }
+	public FrontendInitializer(ConnectionSettings settings) {
+		this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
+		this.settings = settings;
+	}
 
-    @Override
-    protected void initChannel(SocketChannel ch) throws Exception {
-        ChannelPipeline p = ch.pipeline();
-        p.addLast(new LineBasedFrameDecoder(1024));
-        p.addLast(DECODER);
-        p.addLast(ENCODER);
-        p.addLast(LBA);
-        p.addLast(msgEncoder);
-        p.addLast(new FrontendHandler(settings));
-    }
+	@Override
+	protected void initChannel(SocketChannel ch) throws Exception {
+		ChannelPipeline p = ch.pipeline();
+		p.addLast(new LineBasedFrameDecoder(1024));
+		p.addLast(DECODER);
+		p.addLast(ENCODER);
+		p.addLast(LBA);
+		p.addLast(msgEncoder);
+		p.addLast(new FrontendHandler(settings));
+	}
 
 }

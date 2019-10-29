@@ -16,9 +16,10 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.time.Instant;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.time.Instant;
 
 /**
  * This class holds connection status information.
@@ -28,74 +29,72 @@ import java.time.Instant;
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class ConnectionStatus {
 
-    public enum State {
-        CONNECTING,
-        ONLINE,
-        OFFLINE
-    }
+	public enum State {
+		CONNECTING, ONLINE, OFFLINE
+	}
 
-    private final String profileName;
-    @JsonSerialize(using = InstantJsonSerializer.class)
-    private Instant lastUpdate;
-    @JsonSerialize(using = InstantJsonSerializer.class)
-    private Instant connectedSince;
-    private State state = State.CONNECTING;
+	private final String profileName;
+	@JsonSerialize(using = InstantJsonSerializer.class)
+	private Instant lastUpdate;
+	@JsonSerialize(using = InstantJsonSerializer.class)
+	private Instant connectedSince;
+	private State state = State.CONNECTING;
 
-    public ConnectionStatus(String profileName) {
-        this.profileName = profileName;
-    }
+	public ConnectionStatus(String profileName) {
+		this.profileName = profileName;
+	}
 
-    /**
-     * Gets the connection profile name.
-     *
-     * @return Connection profile name
-     */
-    public String getProfileName() {
-        return profileName;
-    }
+	/**
+	 * Gets the connection profile name.
+	 *
+	 * @return Connection profile name
+	 */
+	public String getProfileName() {
+		return profileName;
+	}
 
-    /**
-     * Gets the last update timestamp.
-     *
-     * @return Last update time
-     */
-    public Instant getLastUpdate() {
-        return lastUpdate;
-    }
+	/**
+	 * Gets the last update timestamp.
+	 *
+	 * @return Last update time
+	 */
+	public Instant getLastUpdate() {
+		return lastUpdate;
+	}
 
-    /**
-     * Sets the last update timestamp
-     *
-     * @param lastUpdate Last update time
-     */
-    public void setLastUpdate(Instant lastUpdate) {
-        this.lastUpdate = lastUpdate;
-    }
+	/**
+	 * Sets the last update timestamp
+	 *
+	 * @param lastUpdate Last update time
+	 */
+	public void setLastUpdate(Instant lastUpdate) {
+		this.lastUpdate = lastUpdate;
+	}
 
-    /**
-     * Gets the time since the connection has been established.
-     *
-     * @return Time or {@code null} if not connected.
-     */
-    public Instant getConnectedSince() {
-        return connectedSince;
-    }
+	/**
+	 * Gets the time since the connection has been established.
+	 *
+	 * @return Time or {@code null} if not connected.
+	 */
+	public Instant getConnectedSince() {
+		return connectedSince;
+	}
 
-    /**
-     * Sets the time since the connection has been established.
-     *
-     * @param connectedSince Time or {@code null} if not connected.
-     */
-    public void setConnectedSince(Instant connectedSince) {
-        this.connectedSince = connectedSince;
-    }
+	/**
+	 * Sets the time since the connection has been established.
+	 *
+	 * @param connectedSince Time or {@code null} if not connected.
+	 */
+	public void setConnectedSince(Instant connectedSince) {
+		this.connectedSince = connectedSince;
+	}
 
-    public State getState() {
-        return state;
-    }
+	public State getState() {
+		return state;
+	}
 
-    public void setState(State state) {
-        this.state = state;
-    }
+	public void setState(State state) {
+		this.state = state;
+	}
 
 }

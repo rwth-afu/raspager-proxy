@@ -16,6 +16,12 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.net.ConnectException;
+import java.net.UnknownHostException;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -23,11 +29,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * This class manages the proxy connections.
@@ -36,115 +37,114 @@ import java.util.logging.Logger;
  */
 final class ProxyManager {
 
-    private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
-    private final EventLoopGroup workerGroup = new NioEventLoopGroup();
-    private final ProxyEventListener listener;
-    private volatile boolean shutdownRequested = false;
+	private static final Logger LOGGER = Logger.getLogger(ProxyManager.class.getName());
+	private final EventLoopGroup workerGroup = new NioEventLoopGroup();
+	private final ProxyEventListener listener;
+	private volatile boolean shutdownRequested = false;
 
-    /**
-     * Creates a new proxy manager instance.
-     *
-     * @param listener Proxy event listener to use.
-     */
-    public ProxyManager(ProxyEventListener listener) {
-        this.listener = listener;
-    }
+	/**
+	 * Creates a new proxy manager instance.
+	 *
+	 * @param listener Proxy event listener to use.
+	 */
+	public ProxyManager(ProxyEventListener listener) {
+		this.listener = listener;
+	}
 
-    /**
-     * Opens a new proxy connection.
-     *
-     * @param settings Connection settings
-     */
-    public void openConnection(final ConnectionSettings settings) {
-        workerGroup.submit(() -> doConnect(settings));
+	/**
+	 * Opens a new proxy connection.
+	 *
+	 * @param settings Connection settings
+	 */
+	public void openConnection(final ConnectionSettings settings) {
+		workerGroup.submit(() -> doConnect(settings));
 
-        if (listener != null) {
-            listener.onRegister(settings.getProfileName());
-        }
-    }
+		if (listener != null) {
+			listener.onRegister(settings.getProfileName());
+		}
+	}
 
-    /**
-     * Stops the proxy manager and closes all open connections.
-     */
-    public void shutdown() {
-        shutdownRequested = true;
+	/**
+	 * Stops the proxy manager and closes all open connections.
+	 */
+	public void shutdown() {
+		shutdownRequested = true;
 
-        LOGGER.info("Shutting down proxy manager ...");
+		LOGGER.info("Shutting down proxy manager ...");
 
-        if (listener != null) {
-            try {
-                listener.onShutdown();
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to shut down proxy event listener.", ex);
-            }
-        }
+		if (listener != null) {
+			try {
+				listener.onShutdown();
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to shut down proxy event listener.", ex);
+			}
+		}
 
-        workerGroup.shutdownGracefully();
+		workerGroup.shutdownGracefully();
 
-        LOGGER.info("Proxy manager has been shut down.");
-    }
+		LOGGER.info("Proxy manager has been shut down.");
+	}
 
-    private void doConnect(final ConnectionSettings settings) {
-        Bootstrap b = new Bootstrap();
-        b.group(workerGroup);
-        b.channel(NioSocketChannel.class);
-        b.handler(new FrontendInitializer(settings));
-        b.option(ChannelOption.AUTO_READ, false);
+	private void doConnect(final ConnectionSettings settings) {
+		Bootstrap b = new Bootstrap();
+		b.group(workerGroup);
+		b.channel(NioSocketChannel.class);
+		b.handler(new FrontendInitializer(settings));
+		b.option(ChannelOption.AUTO_READ, false);
 
-        ChannelFuture connf = b.connect(settings.getFrontendAddress());
-        connf.addListener((ChannelFuture f) -> {
-            if (f.isSuccess()) {
-                onConnectSucceeded(settings, f.channel());
-            } else {
-                f.channel().close();
-                onConnectFailed(settings, f.cause());
-            }
-        });
-    }
+		ChannelFuture connf = b.connect(settings.getFrontendAddress());
+		connf.addListener((ChannelFuture f) -> {
+			if (f.isSuccess()) {
+				onConnectSucceeded(settings, f.channel());
+			} else {
+				f.channel().close();
+				onConnectFailed(settings, f.cause());
+			}
+		});
+	}
 
-    private void onConnectSucceeded(final ConnectionSettings settings, final Channel channel) {
-        channel.closeFuture().addListener(f -> onClose(settings));
+	private void onConnectSucceeded(final ConnectionSettings settings, final Channel channel) {
+		channel.closeFuture().addListener(f -> onClose(settings));
 
-        LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
+		LOGGER.log(Level.INFO, "{0} Proxy connection added.", settings.getProfileName());
 
-        if (listener != null) {
-            listener.onConnect(settings.getProfileName());
-        }
-    }
+		if (listener != null) {
+			listener.onConnect(settings.getProfileName());
+		}
+	}
 
-    private void onConnectFailed(ConnectionSettings settings, Throwable ex) {
-        if (ex instanceof ConnectException || ex instanceof UnknownHostException) {
-            LOGGER.log(Level.SEVERE, settings.getProfileName()
-                    + " Could not connect to frontend: {0}", ex.getMessage());
-        } else {
-            LOGGER.log(Level.SEVERE, settings.getProfileName()
-                    + " Could not connect to frontend.", ex);
-        }
+	private void onConnectFailed(ConnectionSettings settings, Throwable ex) {
+		if (ex instanceof ConnectException || ex instanceof UnknownHostException) {
+			LOGGER.log(Level.SEVERE, settings.getProfileName() + " Could not connect to frontend: {0}",
+					ex.getMessage());
+		} else {
+			LOGGER.log(Level.SEVERE, settings.getProfileName() + " Could not connect to frontend.", ex);
+		}
 
-        scheduleReconnect(settings);
-    }
+		scheduleReconnect(settings);
+	}
 
-    private void onClose(ConnectionSettings settings) {
-        LOGGER.log(Level.INFO, "{0} Connection closed.", settings.getProfileName());
+	private void onClose(ConnectionSettings settings) {
+		LOGGER.log(Level.INFO, "{0} Connection closed.", settings.getProfileName());
 
-        boolean reconnect = scheduleReconnect(settings);
+		boolean reconnect = scheduleReconnect(settings);
 
-        if (listener != null) {
-            listener.onDisconnect(settings.getProfileName(), reconnect);
-        }
-    }
+		if (listener != null) {
+			listener.onDisconnect(settings.getProfileName(), reconnect);
+		}
+	}
 
-    private boolean scheduleReconnect(final ConnectionSettings settings) {
-        long sleepTime = settings.getReconnectSleepTime();
-        if (!shutdownRequested && sleepTime > 0) {
-            LOGGER.log(Level.INFO, "{0} Performing reconnect.", settings.getProfileName());
+	private boolean scheduleReconnect(final ConnectionSettings settings) {
+		long sleepTime = settings.getReconnectSleepTime();
+		if (!shutdownRequested && sleepTime > 0) {
+			LOGGER.log(Level.INFO, "{0} Performing reconnect.", settings.getProfileName());
 
-            workerGroup.schedule(() -> doConnect(settings), sleepTime, TimeUnit.MILLISECONDS);
+			workerGroup.schedule(() -> doConnect(settings), sleepTime, TimeUnit.MILLISECONDS);
 
-            return true;
-        } else {
-            return false;
-        }
-    }
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 }

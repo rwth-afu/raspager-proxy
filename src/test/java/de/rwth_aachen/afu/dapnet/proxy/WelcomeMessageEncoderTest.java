@@ -16,18 +16,20 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import java.util.Arrays;
-import java.util.Collection;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  *
@@ -36,53 +38,50 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class WelcomeMessageEncoderTest {
 
-    private static final StringDecoder DECODER = new StringDecoder();
-    private static final StringEncoder ENCODER = new StringEncoder();
-    private static final LineBreakAdder LBA = new LineBreakAdder();
-    private final EmbeddedChannel channel;
-    private final String input;
-    private final String output;
+	private static final StringDecoder DECODER = new StringDecoder();
+	private static final StringEncoder ENCODER = new StringEncoder();
+	private static final LineBreakAdder LBA = new LineBreakAdder();
+	private final EmbeddedChannel channel;
+	private final String input;
+	private final String output;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> getParams() {
-        return Arrays.asList(new Object[][]{
-            {"forward", "forward"},
-            {"[Test v1.0]", "[Test v1.0 name key]"},
-            {"[Test v1.0.0-SCP-#123456]", "[Test v1.0.0-SCP-#123456 name key]"},
-            {"Test/RPC v1.0", "Test/RPC v1.0"}
-        });
-    }
+	@Parameterized.Parameters
+	public static Collection<Object[]> getParams() {
+		return Arrays.asList(new Object[][] { { "forward", "forward" }, { "[Test v1.0]", "[Test v1.0 name key]" },
+				{ "[Test v1.0.0-SCP-#123456]", "[Test v1.0.0-SCP-#123456 name key]" },
+				{ "Test/RPC v1.0", "Test/RPC v1.0" } });
+	}
 
-    public WelcomeMessageEncoderTest(String input, String output) {
-        this.channel = createChannel();
-        this.input = input;
-        this.output = output;
-    }
+	public WelcomeMessageEncoderTest(String input, String output) {
+		this.channel = createChannel();
+		this.input = input;
+		this.output = output;
+	}
 
-    @Test
-    public void test() {
-        // Write
-        Assert.assertTrue(channel.writeOutbound(input));
-        Assert.assertTrue(channel.writeInbound((ByteBuf) channel.readOutbound()));
-        Assert.assertTrue(channel.finish());
+	@Test
+	public void test() {
+		// Write
+		Assert.assertTrue(channel.writeOutbound(input));
+		Assert.assertTrue(channel.writeInbound((ByteBuf) channel.readOutbound()));
+		Assert.assertTrue(channel.finish());
 
-        // Read
-        String msg = channel.readInbound();
-        Assert.assertEquals(output, msg);
-    }
+		// Read
+		String msg = channel.readInbound();
+		Assert.assertEquals(output, msg);
+	}
 
-    private static EmbeddedChannel createChannel() {
-        EmbeddedChannel channel = new EmbeddedChannel();
-        WelcomeMessageEncoder msgEncoder = new WelcomeMessageEncoder("name", "key");
+	private static EmbeddedChannel createChannel() {
+		EmbeddedChannel channel = new EmbeddedChannel();
+		WelcomeMessageEncoder msgEncoder = new WelcomeMessageEncoder("name", "key");
 
-        ChannelPipeline p = channel.pipeline();
-        p.addLast(new LineBasedFrameDecoder(64));
-        p.addLast(DECODER);
-        p.addLast(ENCODER);
-        p.addLast(LBA);
-        p.addLast(msgEncoder);
+		ChannelPipeline p = channel.pipeline();
+		p.addLast(new LineBasedFrameDecoder(64));
+		p.addLast(DECODER);
+		p.addLast(ENCODER);
+		p.addLast(LBA);
+		p.addLast(msgEncoder);
 
-        return channel;
-    }
+		return channel;
+	}
 
 }

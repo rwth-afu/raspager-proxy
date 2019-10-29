@@ -16,12 +16,13 @@
  */
 package de.rwth_aachen.afu.dapnet.proxy;
 
+import java.io.IOException;
+import java.time.Instant;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import java.io.IOException;
-import java.time.Instant;
 
 /**
  * Custom JSON serializer for {@link java.time.Instant} objects.
@@ -30,9 +31,10 @@ import java.time.Instant;
  */
 public class InstantJsonSerializer extends JsonSerializer<Instant> {
 
-    @Override
-    public void serialize(Instant t, JsonGenerator jg, SerializerProvider sp) throws IOException, JsonProcessingException {
-        jg.writeString(t.toString());
-    }
+	@Override
+	public void serialize(Instant t, JsonGenerator jg, SerializerProvider sp)
+			throws IOException, JsonProcessingException {
+		jg.writeString(t.toString());
+	}
 
 }
