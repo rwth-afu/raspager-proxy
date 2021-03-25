@@ -49,4 +49,5 @@ interface ProxyEventListener {
 	 * Called when the proxy manager is shutting down.
 	 */
 	void onShutdown();
+
 }

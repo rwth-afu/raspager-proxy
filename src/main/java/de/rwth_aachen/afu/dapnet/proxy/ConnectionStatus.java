@@ -40,6 +40,11 @@ public class ConnectionStatus {
 	private Instant connectedSince;
 	private State state = State.CONNECTING;
 
+	/**
+	 * Constructs a new object instance.
+	 * 
+	 * @param profileName Profile name to use
+	 */
 	public ConnectionStatus(String profileName) {
 		this.profileName = profileName;
 	}
@@ -89,10 +94,20 @@ public class ConnectionStatus {
 		this.connectedSince = connectedSince;
 	}
 
+	/**
+	 * Gets the connection state.
+	 * 
+	 * @return Connection state
+	 */
 	public State getState() {
 		return state;
 	}
 
+	/**
+	 * Sets the connection state.
+	 * 
+	 * @param state Connection state
+	 */
 	public void setState(State state) {
 		this.state = state;
 	}
