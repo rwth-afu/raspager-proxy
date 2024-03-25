@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
 
 import java.time.Instant;
 
@@ -34,9 +34,9 @@ public class ConnectionStatus {
 	}
 
 	private final String profileName;
-	@JsonSerialize(using = InstantJsonSerializer.class)
+	@JsonSerialize(using = InstantSerializer.class)
 	private Instant lastUpdate;
-	@JsonSerialize(using = InstantJsonSerializer.class)
+	@JsonSerialize(using = InstantSerializer.class)
 	private Instant connectedSince;
 	private State state = State.CONNECTING;
 

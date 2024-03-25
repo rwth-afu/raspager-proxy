@@ -14,27 +14,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
-
-import java.io.IOException;
-import java.time.Instant;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
+package de.hampager.dapnet.proxy;
 
 /**
- * Custom JSON serializer for {@link java.time.Instant} objects.
+ * Event listener interface for proxy connection events.
  *
  * @author Philipp Thiel
  */
-public class InstantJsonSerializer extends JsonSerializer<Instant> {
+interface ProxyEventListener {
 
-	@Override
-	public void serialize(Instant t, JsonGenerator jg, SerializerProvider sp)
-			throws IOException, JsonProcessingException {
-		jg.writeString(t.toString());
-	}
+	/**
+	 * Called when a proxy connection profile is registered.
+	 *
+	 * @param profileName Profile name
+	 */
+	void onRegister(String profileName);
 
+	/**
+	 * Called when a proxy connection has been established.
+	 *
+	 * @param profileName Profile name
+	 */
+	void onConnect(String profileName);
+
+	/**
+	 * Called when a proxy connection has been closed.
+	 *
+	 * @param profileName Profile name
+	 * @param reconnect   Whether a reconnect attempt is made or not.
+	 */
+	void onDisconnect(String profileName, boolean reconnect);
+
+	/**
+	 * Called when the proxy manager is shutting down.
+	 */
+	void onShutdown();
 }

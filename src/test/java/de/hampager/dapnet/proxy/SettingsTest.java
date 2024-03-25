@@ -14,13 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetSocketAddress;
 import java.util.Properties;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test cases for the proxy settings.
@@ -36,20 +37,20 @@ public class SettingsTest {
 		ConnectionSettings s = new ConnectionSettings(props);
 
 		// General
-		Assert.assertEquals("profileName", "testProfile", s.getProfileName());
-		Assert.assertEquals("reconnectSleepTime", 0, s.getReconnectSleepTime());
+		assertEquals("testProfile", s.getProfileName());
+		assertEquals(0, s.getReconnectSleepTime());
 
 		// Frontend
-		Assert.assertEquals("frontend.name", "proxyTest", s.getFrontendName());
-		Assert.assertEquals("frontend.key", "test1", s.getFrontendKey());
+		assertEquals("proxyTest", s.getFrontendName());
+		assertEquals("test1", s.getFrontendKey());
 
 		InetSocketAddress address = new InetSocketAddress("localhost", 43434);
-		Assert.assertEquals("frontendAddress", address, s.getFrontendAddress());
+		assertEquals(address, s.getFrontendAddress());
 
 		// Backend
 		address = new InetSocketAddress("localhost", 43435);
-		Assert.assertEquals("backendAddress", address, s.getBackendAddress());
-		Assert.assertEquals("backend.timeout", 30000, s.getBackendTimout());
+		assertEquals(address, s.getBackendAddress());
+		assertEquals(30000, s.getBackendTimout());
 	}
 
 	private static Properties createProperties() {

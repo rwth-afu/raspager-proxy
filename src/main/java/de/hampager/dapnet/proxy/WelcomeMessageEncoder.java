@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -24,10 +24,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 /**
- * This handler intercepts the welcome message and adds the auth key. If no auth
- * key is required, do not add this handler to the channel pipeline.
- *
- * @author Philipp Thiel
+ * This handler intercepts the welcome message and adds the authentication key.
+ * If no authentication key is required, do not add this handler to the channel
+ * pipeline. The handler will remove itself once the welcome message is
+ * processed.
  */
 final class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 
@@ -39,13 +39,14 @@ final class WelcomeMessageEncoder extends MessageToMessageEncoder<String> {
 	/**
 	 * Creates a new handler instance.
 	 *
-	 * @param authKey Authentication key to use. This must not be null or empty.
+	 * @param authName Authentication name to use. This must not be null or empty.
+	 * @param authKey  Authentication key to use. This must not be null or empty.
 	 */
 	public WelcomeMessageEncoder(String authName, String authKey) {
 		if (authName == null || authName.isEmpty()) {
-			throw new NullPointerException("name");
+			throw new IllegalArgumentException("authName");
 		} else if (authKey == null || authKey.isEmpty()) {
-			throw new NullPointerException("authKey");
+			throw new IllegalArgumentException("authKey");
 		}
 
 		this.authName = authName;

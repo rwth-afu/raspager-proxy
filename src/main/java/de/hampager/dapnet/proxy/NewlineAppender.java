@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
 
 import java.util.List;
 
@@ -23,16 +23,14 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 
 /**
- * This encoder ensures all messages end with a newline.
- *
- * @author Philipp Thiel
+ * This encoder appends a newline character to each message.
  */
 @Sharable
-final class LineBreakAdder extends MessageToMessageEncoder<String> {
+final class NewlineAppender extends MessageToMessageEncoder<String> {
 
 	@Override
 	protected void encode(ChannelHandlerContext ctx, String msg, List<Object> out) throws Exception {
-		out.add(String.format("%s\n", msg));
+		out.add(msg.concat("\n"));
 	}
 
 }

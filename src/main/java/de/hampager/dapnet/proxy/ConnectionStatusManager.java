@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
 
 import java.net.URI;
 import java.time.Instant;
@@ -25,13 +25,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.ws.rs.core.UriBuilder;
-
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
+import org.glassfish.jersey.netty.httpserver.NettyHttpContainerProvider;
 import org.glassfish.jersey.server.ResourceConfig;
+
+import io.netty.channel.Channel;
+import jakarta.ws.rs.core.UriBuilder;
 
 /**
  * This class provides an embedded REST server for querying connection status
@@ -42,7 +42,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 final class ConnectionStatusManager implements ProxyEventListener {
 
 	private final ConcurrentMap<String, ConnectionStatus> connections = new ConcurrentHashMap<>();
-	private volatile HttpServer server;
+	private volatile Channel server;
 
 	@Override
 	public void onRegister(String profileName) {
@@ -128,16 +128,16 @@ final class ConnectionStatusManager implements ProxyEventListener {
 		});
 
 		// Start the server
-		server = GrizzlyHttpServerFactory.createHttpServer(baseUri, config);
+		server = NettyHttpContainerProvider.createServer(baseUri, config, true);
 	}
 
 	/**
 	 * Stops the REST server.
 	 */
 	public void shutdown() {
-		HttpServer theServer = server;
+		Channel theServer = server;
 		if (theServer != null) {
-			theServer.shutdown();
+			theServer.close();
 		}
 	}
 

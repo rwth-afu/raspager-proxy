@@ -14,33 +14,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package de.rwth_aachen.afu.dapnet.proxy;
+package de.hampager.dapnet.proxy;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
 
 /**
- * This class initializes the frontend channel pipeline.
+ * This class initializes the backend channel pipeline.
  *
  * @author Philipp Thiel
  */
-final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
+class BackendInitializer extends ChannelInitializer<SocketChannel> {
 
 	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
 	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
-	private static final LineBreakAdder LBA = new LineBreakAdder();
-	private final WelcomeMessageEncoder msgEncoder;
+	private static final NewlineAppender LBA = new NewlineAppender();
 	private final ConnectionSettings settings;
+	private final Channel inbound;
 
-	public FrontendInitializer(ConnectionSettings settings) {
-		this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
+	public BackendInitializer(ConnectionSettings settings, Channel inbound) {
 		this.settings = settings;
+		this.inbound = inbound;
 	}
 
 	@Override
@@ -50,8 +53,12 @@ final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(DECODER);
 		p.addLast(ENCODER);
 		p.addLast(LBA);
-		p.addLast(msgEncoder);
-		p.addLast(new FrontendHandler(settings));
+
+		if (settings.getBackendTimout() > 0) {
+			p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));
+		}
+
+		p.addLast(new BackendHandler(settings.getProfileName(), inbound));
 	}
 
 }
