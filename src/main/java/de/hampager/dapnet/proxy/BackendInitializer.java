@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,14 +30,12 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 /**
  * This class initializes the backend channel pipeline.
- *
- * @author Philipp Thiel
  */
 class BackendInitializer extends ChannelInitializer<SocketChannel> {
 
 	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
 	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
-	private static final NewlineAppender LBA = new NewlineAppender();
+	private static final NewlineAppender APPENDER = new NewlineAppender();
 	private final ConnectionSettings settings;
 	private final Channel inbound;
 
@@ -52,7 +50,7 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(new LineBasedFrameDecoder(1024));
 		p.addLast(DECODER);
 		p.addLast(ENCODER);
-		p.addLast(LBA);
+		p.addLast(APPENDER);
 
 		if (settings.getBackendTimout() > 0) {
 			p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.hampager.dapnet.proxy;
+package de.hampager.dapnet.proxy.rest;
 
 import java.util.Collection;
 
@@ -28,19 +28,17 @@ import jakarta.ws.rs.core.Response;
 
 /**
  * This class provides the REST API for the connection status report.
- *
- * @author Philipp Thiel
  */
 @Path("status")
 public class ConnectionStatusResource {
 
 	@Inject
-	private ConnectionStatusManager manager;
+	private ProxyRestServer server;
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response get() {
-		Collection<ConnectionStatus> active = manager.getConnections();
+		Collection<ConnectionStatus> active = server.getConnections();
 
 		return Response.ok(active).build();
 	}
@@ -49,7 +47,7 @@ public class ConnectionStatusResource {
 	@Path("{name}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response get(@PathParam("name") String name) {
-		ConnectionStatus status = manager.get(name);
+		ConnectionStatus status = server.getConnection(name);
 		if (status != null) {
 			return Response.ok(status).build();
 		} else {

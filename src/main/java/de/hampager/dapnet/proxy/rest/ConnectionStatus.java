@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.hampager.dapnet.proxy;
+package de.hampager.dapnet.proxy.rest;
 
+import java.io.Serializable;
 import java.time.Instant;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -23,16 +24,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * This class holds connection status information.
- *
- * @author Philipp Thiel
  */
 @JsonInclude(JsonInclude.Include.ALWAYS)
-public class ConnectionStatus {
+class ConnectionStatus implements Serializable {
 
 	public enum State {
 		CONNECTING, ONLINE, OFFLINE
 	}
 
+	private static final long serialVersionUID = 1L;
 	private final String profileName;
 	@JsonSerialize(using = InstantSerializer.class)
 	private Instant lastUpdate;
@@ -40,8 +40,30 @@ public class ConnectionStatus {
 	private Instant connectedSince;
 	private State state = State.CONNECTING;
 
+	/**
+	 * Constructs a new {@code ConnectionStatus} instance.
+	 * 
+	 * @param profileName Connection profile name
+	 */
 	public ConnectionStatus(String profileName) {
 		this.profileName = profileName;
+	}
+
+	/**
+	 * Copy-constructs a new {@code ConnectionStatus} instance.
+	 * 
+	 * @param other Source instance to copy from
+	 * @throws NullPointerException if the source instance is {@code null}.
+	 */
+	public ConnectionStatus(ConnectionStatus other) {
+		if (other == null) {
+			throw new NullPointerException("Source ConnectionStatus is null.");
+		}
+
+		this.profileName = other.profileName;
+		this.lastUpdate = other.lastUpdate;
+		this.connectedSince = other.connectedSince;
+		this.state = other.state;
 	}
 
 	/**
@@ -89,10 +111,20 @@ public class ConnectionStatus {
 		this.connectedSince = connectedSince;
 	}
 
+	/**
+	 * Gets the connection state.
+	 * 
+	 * @return Current connection state
+	 */
 	public State getState() {
 		return state;
 	}
 
+	/**
+	 * Sets the connection state
+	 * 
+	 * @param state New connection state
+	 */
 	public void setState(State state) {
 		this.state = state;
 	}

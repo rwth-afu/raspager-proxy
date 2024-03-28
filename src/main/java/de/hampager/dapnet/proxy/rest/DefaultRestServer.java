@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,34 +14,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package de.hampager.dapnet.proxy;
+package de.hampager.dapnet.proxy.rest;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.glassfish.jersey.internal.inject.AbstractBinder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.netty.httpserver.NettyHttpContainerProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 
+import de.hampager.dapnet.proxy.ProxyEventListener;
 import io.netty.channel.Channel;
 import jakarta.ws.rs.core.UriBuilder;
 
 /**
- * This class provides an embedded REST server for querying connection status
- * information.
- *
- * @author Philipp Thiel
+ * This class provides the default REST server implementation for querying
+ * connection status information.
  */
-final class ConnectionStatusManager implements ProxyEventListener {
+final class DefaultRestServer implements ProxyRestServer, ProxyEventListener {
 
-	private final ConcurrentMap<String, ConnectionStatus> connections = new ConcurrentHashMap<>();
+	private static final Logger LOGGER = Logger.getLogger(DefaultRestServer.class.getName());
+	private final Object lockObject = new Object();
+	private final Map<String, ConnectionStatus> connections = new HashMap<>();
 	private volatile Channel server;
 
 	@Override
@@ -49,14 +50,16 @@ final class ConnectionStatusManager implements ProxyEventListener {
 		ConnectionStatus status = new ConnectionStatus(profileName);
 		status.setLastUpdate(Instant.now());
 
-		connections.put(profileName, status);
+		synchronized (lockObject) {
+			connections.put(profileName, status);
+		}
 	}
 
 	@Override
 	public void onConnect(String profileName) {
-		ConnectionStatus status = connections.get(profileName);
-		if (status != null) {
-			synchronized (status) {
+		synchronized (lockObject) {
+			ConnectionStatus status = connections.get(profileName);
+			if (status != null) {
 				Instant now = Instant.now();
 
 				status.setLastUpdate(now);
@@ -68,9 +71,9 @@ final class ConnectionStatusManager implements ProxyEventListener {
 
 	@Override
 	public void onDisconnect(String profileName, boolean reconnect) {
-		ConnectionStatus status = connections.get(profileName);
-		if (status != null) {
-			synchronized (status) {
+		synchronized (lockObject) {
+			ConnectionStatus status = connections.get(profileName);
+			if (status != null) {
 				Instant now = Instant.now();
 
 				status.setLastUpdate(now);
@@ -82,48 +85,48 @@ final class ConnectionStatusManager implements ProxyEventListener {
 
 	@Override
 	public void onShutdown() {
-		shutdown();
+		stop();
 	}
 
-	/**
-	 * Gets an unmodifiable collection of all loaded connections.
-	 *
-	 * @return Collection of loaded connections.
-	 */
+	@Override
 	public Collection<ConnectionStatus> getConnections() {
-		return Collections.unmodifiableCollection(connections.values());
+		Collection<ConnectionStatus> result = null;
+		synchronized (lockObject) {
+			result = new ArrayList<ConnectionStatus>(connections.values());
+		}
+		return result;
 	}
 
-	/**
-	 * Gets a connection status object.
-	 *
-	 * @param name Name of the connection profile. A case-sensitive lookup is
-	 *             performed.
-	 * @return Connection status object or {@code null} if name not found.
-	 */
-	public ConnectionStatus get(String name) {
-		return connections.get(name);
+	@Override
+	public ConnectionStatus getConnection(String name) {
+		synchronized (lockObject) {
+			ConnectionStatus result = connections.get(name);
+			if (result != null) {
+				return new ConnectionStatus(result);
+			} else {
+				return null;
+			}
+		}
 	}
 
-	/**
-	 * Starts the REST server on the given port. The server will listen on all
-	 * interfaces.
-	 *
-	 * @param port Port to listen on.
-	 */
-	public void start(int port) {
-		Map<String, Object> properties = new HashMap<>();
-		properties.put("proxyStatusManager", this);
+	@Override
+	public ProxyEventListener getEventListener() {
+		return this;
+	}
+
+	@Override
+	public void start(String uri, int port) {
+		LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
 
 		// Endpoint configuration
-		URI baseUri = UriBuilder.fromUri("http://0.0.0.0/").port(port).build();
+		URI baseUri = UriBuilder.fromUri(uri).port(port).build();
 
 		// Resource configuration
 		ResourceConfig config = new ResourceConfig(ConnectionStatusResource.class, JacksonFeature.class);
 		config.register(new AbstractBinder() {
 			@Override
 			protected void configure() {
-				bind(ConnectionStatusManager.this).to(ConnectionStatusManager.class);
+				bind(DefaultRestServer.this).to(ProxyRestServer.class);
 			}
 		});
 
@@ -131,13 +134,17 @@ final class ConnectionStatusManager implements ProxyEventListener {
 		server = NettyHttpContainerProvider.createServer(baseUri, config, true);
 	}
 
-	/**
-	 * Stops the REST server.
-	 */
-	public void shutdown() {
+	@Override
+	public void stop() {
+		LOGGER.info("Stopping REST server");
+
 		Channel theServer = server;
 		if (theServer != null) {
-			theServer.close();
+			try {
+				theServer.close().sync();
+			} catch (InterruptedException e) {
+				LOGGER.warning("REST server shutdown interrupted");
+			}
 		}
 	}
 

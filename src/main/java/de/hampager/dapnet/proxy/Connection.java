@@ -1,6 +1,6 @@
 package de.hampager.dapnet.proxy;
 
-public interface Connection {
+public interface Connection<T> {
 
 	String getProfileName();
 
@@ -16,14 +16,14 @@ public interface Connection {
 	 * 
 	 * @param message Message to process
 	 */
-	void handleMessage(String message);
+	void handleMessage(T message);
 
 	/**
 	 * Sends a message.
 	 * 
 	 * @param message Message to send.
 	 */
-	void sendMessage(String message);
+	void sendMessage(T message);
 
 	/**
 	 * Handles an exception related to the underlying connection.

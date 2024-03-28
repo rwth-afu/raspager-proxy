@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,8 @@ package de.hampager.dapnet.proxy;
 
 /**
  * Event listener interface for proxy connection events.
- *
- * @author Philipp Thiel
  */
-interface ProxyEventListener {
+public interface ProxyEventListener {
 
 	/**
 	 * Called when a proxy connection profile is registered.

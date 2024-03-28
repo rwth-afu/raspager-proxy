@@ -1,4 +1,5 @@
 # Local stuff
+.DS_Store
 local/
 
 # Maven build

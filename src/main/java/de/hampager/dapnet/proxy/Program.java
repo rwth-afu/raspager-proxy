@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +19,18 @@ package de.hampager.dapnet.proxy;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import de.hampager.dapnet.proxy.rest.ProxyRestServer;
+
 /**
  * This class contains the application entry point.
- *
- * @author Philipp Thiel
  */
 public final class Program {
 
 	private static final String REST_PORT_KEY = "dapnet.proxy.rest.port";
 	private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
+
+	private ProxyManager manager;
+	private ProxyRestServer restServer;
 
 	public static void main(String[] args) {
 		if (args.length < 1) {
@@ -38,37 +41,49 @@ public final class Program {
 		LOGGER.log(Level.INFO, "DAPNET Proxy Version {0}", Program.class.getPackage().getImplementationVersion());
 
 		try {
-			// Start embedded REST server?
-			ConnectionStatusManager statusManager = null;
-			Integer port = Integer.getInteger(REST_PORT_KEY);
-			if (port != null) {
-				statusManager = new ConnectionStatusManager();
-				LOGGER.log(Level.INFO, "Starting REST server on port {0,number,#}", port);
-				statusManager.start(port);
-			}
-
-			ProxyManager proxyManager = new ProxyManager(statusManager);
-			registerShutdownHook(proxyManager);
-
-			for (String arg : args) {
-				registerService(proxyManager, arg);
-			}
+			Program prog = new Program();
+			prog.run(args);
 		} catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "Exception in main.", ex);
+			LOGGER.log(Level.SEVERE, "Fatal exception in main.", ex);
 			System.exit(1);
 		}
 	}
 
-	private static void registerService(ProxyManager manager, String configFile) {
-		try {
-			ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
-			manager.openConnection(settings);
-		} catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
+	public void run(String... configFiles) throws Exception {
+		if (configFiles.length < 1) {
+			throw new IllegalArgumentException("No configuration files provided.");
+		}
+
+		startRestServer();
+		startProxyManager();
+
+		for (String config : configFiles) {
+			registerService(config);
 		}
 	}
 
-	private static void registerShutdownHook(final ProxyManager manager) {
+	private void startRestServer() throws Exception {
+		Integer port = Integer.getInteger(REST_PORT_KEY);
+		if (port == null) {
+			LOGGER.fine("REST server disabled.");
+			return;
+		}
+
+		restServer = ProxyRestServer.createDefault();
+		restServer.start("http://0.0.0.0/", port);
+	}
+
+	private void startProxyManager() {
+		ProxyEventListener listener = null;
+		if (restServer != null) {
+			listener = restServer.getEventListener();
+		}
+
+		manager = new ProxyManager(listener);
+		registerShutdownHook();
+	}
+
+	private void registerShutdownHook() {
 		Runnable hook = () -> {
 			try {
 				if (manager != null) {
@@ -80,6 +95,15 @@ public final class Program {
 		};
 
 		Runtime.getRuntime().addShutdownHook(new Thread(hook, "ShutdownHook"));
+	}
+
+	private void registerService(String configFile) {
+		try {
+			ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
+			manager.openConnection(settings);
+		} catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
+		}
 	}
 
 }

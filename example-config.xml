@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dapnet-proxy>
+	<!-- DAPNET connection configuration -->
+	<dapnet>
+		<host>my-server</host>
+		<port>43434</port>
+		<timeout>60</timeout>
+	</dapnet>
+	<!-- Transmitter configuration -->
+	<transmitters>
+		<transmitter name="Transmitter1" enabled="True">
+			<address>transmitter1</address>
+			<port>1337</port>
+			<authKey>secret123</authKey>
+			<reconnect-delay>0</reconnect-delay>
+		</transmitter>
+	</transmitters>
+</dapnet-proxy>
