@@ -17,6 +17,7 @@
 package de.hampager.dapnet.proxy;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import io.netty.channel.Channel;
@@ -29,19 +30,19 @@ import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 /**
- * This class initializes the backend channel pipeline.
+ * This class initializes the transmitter channel pipeline.
  */
-class BackendInitializer extends ChannelInitializer<SocketChannel> {
+class TransmitterChannelInitializer extends ChannelInitializer<SocketChannel> {
 
 	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
 	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
 	private static final NewlineAppender APPENDER = new NewlineAppender();
-	private final ConnectionProfile settings;
-	private final Channel inbound;
+	private final ConnectionProfile profile;
+	private final Channel dapnetChannel;
 
-	public BackendInitializer(ConnectionProfile settings, Channel inbound) {
-		this.settings = settings;
-		this.inbound = inbound;
+	public TransmitterChannelInitializer(ConnectionProfile profile, Channel dapnetChannel) {
+		this.profile = Objects.requireNonNull(profile);
+		this.dapnetChannel = Objects.requireNonNull(dapnetChannel);
 	}
 
 	@Override
@@ -52,12 +53,12 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(ENCODER);
 		p.addLast(APPENDER);
 
-		final long timeout = settings.getTransmitterTimeout().toSeconds();
+		final long timeout = profile.getTransmitterTimeout().toSeconds();
 		if (timeout > 0) {
 			p.addLast(new IdleStateHandler(timeout, 0, 0, TimeUnit.SECONDS));
 		}
 
-		p.addLast(new BackendHandler(settings.getName(), inbound));
+		p.addLast(new TransmitterChannelHandler(profile.getName(), dapnetChannel));
 	}
 
 }

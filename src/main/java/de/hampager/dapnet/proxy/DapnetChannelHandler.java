@@ -18,6 +18,8 @@ package de.hampager.dapnet.proxy;
 
 import java.net.ConnectException;
 import java.net.UnknownHostException;
+import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,7 +41,7 @@ final class DapnetChannelHandler extends SimpleChannelInboundHandler<String> {
 
 	private static final Logger LOGGER = Logger.getLogger(DapnetChannelHandler.class.getName());
 	private final ConnectionProfile profile;
-	private Channel outboundChannel;
+	private volatile Channel transmitterChannel;
 
 	/**
 	 * Creates a new DAPNET channel handler.
@@ -54,65 +56,45 @@ final class DapnetChannelHandler extends SimpleChannelInboundHandler<String> {
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		LOGGER.log(Level.INFO, "{0} Connected to DAPNET server.", profile.getName());
 
-		final Channel inboundChannel = ctx.channel();
+		final Channel dapnetChannel = ctx.channel();
 
 		Bootstrap b = new Bootstrap();
-		b.group(inboundChannel.eventLoop());
-		b.channel(ctx.channel().getClass());
-		b.handler(new BackendInitializer(profile, inboundChannel));
+		b.group(dapnetChannel.eventLoop());
+		b.channel(dapnetChannel.getClass());
+		b.handler(new TransmitterChannelInitializer(profile, dapnetChannel));
 		b.option(ChannelOption.AUTO_READ, false);
 
 		ChannelFuture f = b.connect(profile.getTransmitterAddress());
-		outboundChannel = f.channel();
-		f.addListener((ChannelFuture future) -> {
-			if (future.isSuccess()) {
-				inboundChannel.read();
-			} else {
-				Throwable cause = future.cause();
-				if (cause instanceof ConnectException || cause instanceof UnknownHostException) {
-					LOGGER.log(Level.SEVERE, profile.getName() + " Failed to connect to backend: {0}",
-							future.cause().getMessage());
-				} else {
-					LOGGER.log(Level.SEVERE, profile.getName() + " Failed to connect to backend.", cause);
-				}
-
-				inboundChannel.close();
-			}
-		});
+		transmitterChannel = f.channel();
+		f.addListener(new TransmitterConnectFutureListener(dapnetChannel));
 	}
 
 	@Override
 	protected void channelRead0(final ChannelHandlerContext ctx, String msg) throws Exception {
-		LOGGER.log(Level.FINEST, "{0} Forwarding message from frontend to backend.", profile.getName());
+		LOGGER.log(Level.FINEST, "{0} Forwarding message from DAPNET to transmitter.", profile.getName());
 
-		if (outboundChannel.isActive()) {
-			outboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-				if (future.isSuccess()) {
-					ctx.channel().read();
-				} else {
-					future.channel().close();
-				}
-			});
+		if (transmitterChannel.isActive()) {
+			transmitterChannel.writeAndFlush(msg).addListener(new TransmitterWriteFutureListener(ctx.channel()));
 		} else {
-			LOGGER.log(Level.WARNING, "{0} Outbound channel not active.", profile.getName());
+			LOGGER.log(Level.WARNING, "{0} Transmitter channel not active; discarding message.", profile.getName());
 		}
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		LOGGER.log(Level.INFO, "{0} Disconnected from frontend server.", profile.getName());
+		LOGGER.log(Level.INFO, "{0} Disconnected from DAPNET server.", profile.getName());
 
-		if (outboundChannel != null) {
-			closeOnFlush(outboundChannel);
+		if (transmitterChannel != null) {
+			closeOnFlush(transmitterChannel);
 		}
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		if (cause instanceof ConnectException) {
-			LOGGER.log(Level.SEVERE, profile.getName() + " Could not connect to backend: {0}", cause.getMessage());
+			LOGGER.log(Level.SEVERE, profile.getName() + " Could not connect to transmitter: {0}", cause.getMessage());
 		} else {
-			LOGGER.log(Level.SEVERE, profile.getName() + " Exception in frontend handler.", cause);
+			LOGGER.log(Level.SEVERE, profile.getName() + " Exception in DAPNET handler.", cause);
 		}
 
 		closeOnFlush(ctx.channel());
@@ -122,6 +104,59 @@ final class DapnetChannelHandler extends SimpleChannelInboundHandler<String> {
 		if (ch.isActive()) {
 			ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
 		}
+	}
+
+	private class TransmitterConnectFutureListener implements ChannelFutureListener {
+
+		private final Channel dapnetChannel;
+
+		public TransmitterConnectFutureListener(Channel dapnetChannel) {
+			this.dapnetChannel = Objects.requireNonNull(dapnetChannel);
+		}
+
+		@Override
+		public void operationComplete(ChannelFuture future) throws Exception {
+			if (future.isSuccess()) {
+				dapnetChannel.read();
+			} else {
+				final Throwable cause = future.cause();
+				if (cause instanceof ConnectException || cause instanceof UnknownHostException) {
+					LOGGER.log(Level.SEVERE, "{0} Failed to connect to DAPNET: {1}",
+							new Object[] { profile.getName(), cause.getMessage() });
+				} else {
+					final Supplier<String> msgSupplier = new Supplier<String>() {
+						@Override
+						public String get() {
+							return profile.getName() + " Failed to connect to DAPNET";
+						}
+					};
+
+					LOGGER.log(Level.SEVERE, cause, msgSupplier);
+				}
+
+				dapnetChannel.close();
+			}
+		}
+
+	}
+
+	private class TransmitterWriteFutureListener implements ChannelFutureListener {
+
+		private final Channel dapnetChannel;
+
+		public TransmitterWriteFutureListener(Channel dapnetChannel) {
+			this.dapnetChannel = Objects.requireNonNull(dapnetChannel);
+		}
+
+		@Override
+		public void operationComplete(ChannelFuture future) throws Exception {
+			if (future.isSuccess()) {
+				dapnetChannel.read();
+			} else {
+				future.channel().close();
+			}
+		}
+
 	}
 
 }

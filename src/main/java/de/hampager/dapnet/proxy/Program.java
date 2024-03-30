@@ -29,7 +29,7 @@ public final class Program {
 	private static final String REST_PORT_KEY = "dapnet.proxy.rest.port";
 	private static final Logger LOGGER = Logger.getLogger(Program.class.getName());
 
-	private ProxyManager manager;
+	private ProxyConnectionManager manager;
 	private ProxyRestServer restServer;
 
 	public static void main(String[] args) {
@@ -79,7 +79,7 @@ public final class Program {
 			listener = restServer.getEventListener();
 		}
 
-		manager = new ProxyManager(listener);
+		manager = new ProxyConnectionManager(listener);
 		registerShutdownHook();
 	}
 

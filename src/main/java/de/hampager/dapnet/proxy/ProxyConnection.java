@@ -43,7 +43,6 @@ final class ProxyConnection {
 	private final ProxyConnectionEventListener eventListener;
 	private final ConnectionProfile profile;
 	private volatile Channel dapnetChannel;
-	private volatile Channel transmitterChannel;
 	private volatile boolean closeRequested = false;
 
 	/**
@@ -93,7 +92,6 @@ final class ProxyConnection {
 		closeRequested = true;
 
 		closeDapnet();
-		closeTransmitter();
 	}
 
 	/**
@@ -102,15 +100,7 @@ final class ProxyConnection {
 	 * @return {@code true} if the connection is active, {@code false} otherwise.
 	 */
 	public boolean isActive() {
-		return (dapnetChannel != null && transmitterChannel != null);
-	}
-
-	public void sendToDapnet(String message) {
-
-	}
-
-	public void sendToTransmitter(String message) {
-
+		return (dapnetChannel != null && dapnetChannel.isActive());
 	}
 
 	private void connectDapnet() {
@@ -122,17 +112,6 @@ final class ProxyConnection {
 
 		ChannelFuture future = b.connect(profile.getDapnetAddress());
 		future.addListener(new DapnetConnectFutureListener());
-	}
-
-	private void connectTransmitter() {
-		Bootstrap b = new Bootstrap();
-		b.group(workerGroup);
-		b.channel(NioSocketChannel.class);
-		//b.handler(new BackendInitializer(profile));
-		b.option(ChannelOption.AUTO_READ, false);
-
-		ChannelFuture future = b.connect(profile.getTransmitterAddress());
-		future.addListener(new TransmitterConnectFutureListener());
 	}
 
 	private boolean scheduleReconnect() {
@@ -154,17 +133,6 @@ final class ProxyConnection {
 				ch.close().sync();
 			} catch (InterruptedException ex) {
 				LOGGER.log(Level.WARNING, "{0} DAPNET channel close interrupted.", profile.getName());
-			}
-		}
-	}
-
-	private void closeTransmitter() {
-		final Channel ch = transmitterChannel;
-		if (ch != null) {
-			try {
-				ch.close().sync();
-			} catch (InterruptedException ex) {
-				LOGGER.log(Level.WARNING, "{0} Transmitter channel close interrupted.", profile.getName());
 			}
 		}
 	}
@@ -224,69 +192,6 @@ final class ProxyConnection {
 			LOGGER.log(Level.INFO, "{0} DAPNET connection closed.", profile.getName());
 
 			dapnetChannel = null;
-
-			final boolean reconnecting = scheduleReconnect();
-
-			workerGroup.execute(() -> eventListener.onDisconnect(profile.getName(), reconnecting));
-		}
-
-	}
-
-	private class TransmitterConnectFutureListener implements ChannelFutureListener {
-
-		@Override
-		public void operationComplete(ChannelFuture future) throws Exception {
-			if (closeRequested) {
-				future.channel().close();
-				return;
-			}
-
-			if (future.isSuccess()) {
-				onSuccess(future);
-			} else {
-				onFailure(future);
-			}
-		}
-
-		private void onSuccess(ChannelFuture future) {
-			transmitterChannel = future.channel();
-			transmitterChannel.closeFuture().addListener(new TransmitterCloseFutureListener());
-
-			LOGGER.log(Level.INFO, "{0} Transmitter connection established.", profile.getName());
-
-			workerGroup.execute(() -> eventListener.onConnect(profile.getName()));
-		}
-
-		private void onFailure(ChannelFuture future) {
-			final Throwable cause = future.cause();
-			if (cause instanceof ConnectException || cause instanceof UnknownHostException) {
-				LOGGER.log(Level.SEVERE, "{0} Failed to connect to transmitter: {1}",
-						new Object[] { profile.getName(), cause.getMessage() });
-			} else {
-				final Supplier<String> msgSupplier = new Supplier<String>() {
-					@Override
-					public String get() {
-						return profile.getName() + " Failed to connect to transmitter";
-					}
-				};
-
-				LOGGER.log(Level.SEVERE, cause, msgSupplier);
-			}
-
-			future.channel().close();
-
-			scheduleReconnect();
-		}
-
-	}
-
-	private class TransmitterCloseFutureListener implements ChannelFutureListener {
-
-		@Override
-		public void operationComplete(ChannelFuture future) throws Exception {
-			LOGGER.log(Level.INFO, "{0} Transmitter connection closed.", profile.getName());
-
-			transmitterChannel = null;
 
 			final boolean reconnecting = scheduleReconnect();
 

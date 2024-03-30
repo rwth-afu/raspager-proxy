@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,39 +27,37 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
 /**
- * The backend handler is responsible for the connection to the backend server.
- *
- * @author Philipp Thiel
+ * Channel handler implementation for the transmitter connection.
  */
-final class BackendHandler extends SimpleChannelInboundHandler<String> {
+final class TransmitterChannelHandler extends SimpleChannelInboundHandler<String> {
 
 	private enum State {
 		HANDSHAKE, SEND_KEEP_ALIVE, PENDING_KEEP_ALIVE_1, PENDING_KEEP_ALIVE_2
 	}
 
 	private static final String KEEP_ALIVE_REQ = "2:PING";
-	private static final Logger LOGGER = Logger.getLogger(BackendHandler.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(TransmitterChannelHandler.class.getName());
 	private final String profileName;
-	private final Channel inboundChannel;
+	private final Channel dapnetChannel;
 	private volatile State state = State.HANDSHAKE;
 
-	public BackendHandler(String profileName, Channel inboundChannel) {
+	public TransmitterChannelHandler(String profileName, Channel dapnetChannel) {
 		this.profileName = profileName;
-		this.inboundChannel = inboundChannel;
+		this.dapnetChannel = dapnetChannel;
 	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		LOGGER.log(Level.INFO, "{0} Connected to backend server.", profileName);
+		LOGGER.log(Level.INFO, "{0} Connected to transmitter.", profileName);
 
 		ctx.read();
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		LOGGER.log(Level.INFO, "{0} Disconnected from backend server.", profileName);
+		LOGGER.log(Level.INFO, "{0} Disconnected from transmitter.", profileName);
 
-		DapnetChannelHandler.closeOnFlush(inboundChannel);
+		DapnetChannelHandler.closeOnFlush(dapnetChannel);
 	}
 
 	@Override
@@ -84,7 +82,7 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 			if (msg.equals("+")) {
 				state = State.SEND_KEEP_ALIVE;
 				forward = false;
-				LOGGER.log(Level.INFO, "{0} Received keep alive response from backend.", profileName);
+				LOGGER.log(Level.INFO, "{0} Received keep alive response from transmitter.", profileName);
 			}
 			break;
 		}
@@ -98,7 +96,7 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		LOGGER.log(Level.SEVERE, profileName + " Exception in backend handler.", cause);
+		LOGGER.log(Level.SEVERE, profileName + " Exception in transmitter handler.", cause);
 		DapnetChannelHandler.closeOnFlush(ctx.channel());
 	}
 
@@ -113,9 +111,9 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 	}
 
 	private void forwardMessage(final ChannelHandlerContext ctx, String msg) throws Exception {
-		LOGGER.log(Level.FINEST, "{0} Forwarding message from backend to frontend.", profileName);
+		LOGGER.log(Level.FINEST, "{0} Forwarding message from transmitter to DAPNET.", profileName);
 
-		inboundChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
+		dapnetChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
 			if (future.isSuccess()) {
 				ctx.channel().read();
 			} else {
@@ -140,12 +138,12 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 			break;
 		case SEND_KEEP_ALIVE:
 			state = State.PENDING_KEEP_ALIVE_1;
-			LOGGER.log(Level.INFO, "{0} Sending keep alive request to backend.", profileName);
+			LOGGER.log(Level.INFO, "{0} Sending keep alive request to transmitter.", profileName);
 			writeMessage(ctx, KEEP_ALIVE_REQ);
 			break;
 		case PENDING_KEEP_ALIVE_1:
 		case PENDING_KEEP_ALIVE_2:
-			LOGGER.log(Level.SEVERE, "{0} Backend read timed out, closing channel.", profileName);
+			LOGGER.log(Level.SEVERE, "{0} Transmitter read timed out, closing channel.", profileName);
 			DapnetChannelHandler.closeOnFlush(ctx.channel());
 			break;
 		}
