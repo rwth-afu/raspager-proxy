@@ -25,11 +25,11 @@ import java.time.Duration;
 import java.util.Properties;
 
 /**
- * This class contains the connection profile settings.
+ * This class represents the proxy connection profile.
  */
-final class ConnectionSettings {
+final class ConnectionProfile {
 
-	private String profileName;
+	private String name;
 	private String authName;
 	private String authKey;
 	private SocketAddress dapnetAddress;
@@ -44,15 +44,15 @@ final class ConnectionSettings {
 	 * @param props Properties to use.
 	 * @throws NullPointerException If a required settings is not found.
 	 */
-	public ConnectionSettings(Properties props) {
+	public ConnectionProfile(Properties props) {
 		getCommonConfig(props);
 		getDapnetConfig(props);
 		getTransmitterConfig(props);
 	}
 
 	private void getCommonConfig(Properties props) {
-		profileName = getString(props, "profile.name");
-		if (profileName.isEmpty()) {
+		name = getString(props, "profile.name");
+		if (name.isEmpty()) {
 			throw new IllegalArgumentException("Profile name must not be empty.");
 		}
 
@@ -89,22 +89,22 @@ final class ConnectionSettings {
 	 * @throws FileNotFoundException If the file does not exist.
 	 * @throws IOException           If the file could not be read.
 	 */
-	public static ConnectionSettings fromFile(String filename) throws FileNotFoundException, IOException {
+	public static ConnectionProfile fromFile(String filename) throws FileNotFoundException, IOException {
 		Properties props = new Properties();
 		try (FileInputStream fin = new FileInputStream(filename)) {
 			props.load(fin);
 		}
 
-		return new ConnectionSettings(props);
+		return new ConnectionProfile(props);
 	}
 
 	/**
 	 * Returns the profile name.
 	 *
-	 * @return Name of the loaded profile.
+	 * @return Name of the connection profile.
 	 */
-	public String getProfileName() {
-		return profileName;
+	public String getName() {
+		return name;
 	}
 
 	/**

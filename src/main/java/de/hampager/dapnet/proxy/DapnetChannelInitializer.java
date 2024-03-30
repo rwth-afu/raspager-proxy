@@ -26,19 +26,19 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
 /**
- * This class initializes the frontend channel pipeline.
+ * This class initializes the DAPNET channel pipeline.
  */
-final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
+final class DapnetChannelInitializer extends ChannelInitializer<SocketChannel> {
 
 	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
 	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
 	private static final NewlineAppender APPENDER = new NewlineAppender();
 	private final WelcomeMessageEncoder msgEncoder;
-	private final ConnectionSettings settings;
+	private final ConnectionProfile profile;
 
-	public FrontendInitializer(ConnectionSettings settings) {
-		this.msgEncoder = new WelcomeMessageEncoder(settings.getDapnetAuthName(), settings.getDapnetAuthKey());
-		this.settings = settings;
+	public DapnetChannelInitializer(ConnectionProfile profile) {
+		this.msgEncoder = new WelcomeMessageEncoder(profile.getDapnetAuthName(), profile.getDapnetAuthKey());
+		this.profile = profile;
 	}
 
 	@Override
@@ -49,7 +49,7 @@ final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(ENCODER);
 		p.addLast(APPENDER);
 		p.addLast(msgEncoder);
-		p.addLast(new FrontendHandler(settings));
+		p.addLast(new DapnetChannelHandler(profile));
 	}
 
 }

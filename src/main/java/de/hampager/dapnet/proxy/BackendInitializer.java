@@ -36,10 +36,10 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 	private static final StringDecoder DECODER = new StringDecoder(StandardCharsets.US_ASCII);
 	private static final StringEncoder ENCODER = new StringEncoder(StandardCharsets.US_ASCII);
 	private static final NewlineAppender APPENDER = new NewlineAppender();
-	private final ConnectionSettings settings;
+	private final ConnectionProfile settings;
 	private final Channel inbound;
 
-	public BackendInitializer(ConnectionSettings settings, Channel inbound) {
+	public BackendInitializer(ConnectionProfile settings, Channel inbound) {
 		this.settings = settings;
 		this.inbound = inbound;
 	}
@@ -57,7 +57,7 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 			p.addLast(new IdleStateHandler(timeout, 0, 0, TimeUnit.SECONDS));
 		}
 
-		p.addLast(new BackendHandler(settings.getProfileName(), inbound));
+		p.addLast(new BackendHandler(settings.getName(), inbound));
 	}
 
 }

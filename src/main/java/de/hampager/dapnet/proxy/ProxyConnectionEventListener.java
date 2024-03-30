@@ -19,7 +19,7 @@ package de.hampager.dapnet.proxy;
 /**
  * Event listener interface for proxy connection events.
  */
-public interface ProxyEventListener {
+public interface ProxyConnectionEventListener {
 
 	/**
 	 * Called when a proxy connection profile is registered.

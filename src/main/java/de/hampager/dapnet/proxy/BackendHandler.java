@@ -59,7 +59,7 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		LOGGER.log(Level.INFO, "{0} Disconnected from backend server.", profileName);
 
-		FrontendHandler.closeOnFlush(inboundChannel);
+		DapnetChannelHandler.closeOnFlush(inboundChannel);
 	}
 
 	@Override
@@ -99,7 +99,7 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		LOGGER.log(Level.SEVERE, profileName + " Exception in backend handler.", cause);
-		FrontendHandler.closeOnFlush(ctx.channel());
+		DapnetChannelHandler.closeOnFlush(ctx.channel());
 	}
 
 	@Override
@@ -146,7 +146,7 @@ final class BackendHandler extends SimpleChannelInboundHandler<String> {
 		case PENDING_KEEP_ALIVE_1:
 		case PENDING_KEEP_ALIVE_2:
 			LOGGER.log(Level.SEVERE, "{0} Backend read timed out, closing channel.", profileName);
-			FrontendHandler.closeOnFlush(ctx.channel());
+			DapnetChannelHandler.closeOnFlush(ctx.channel());
 			break;
 		}
 	}

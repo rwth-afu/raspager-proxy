@@ -18,7 +18,7 @@ package de.hampager.dapnet.proxy.rest;
 
 import java.util.Collection;
 
-import de.hampager.dapnet.proxy.ProxyEventListener;
+import de.hampager.dapnet.proxy.ProxyConnectionEventListener;
 
 /**
  * REST server interface
@@ -46,7 +46,7 @@ public interface ProxyRestServer {
 	 * 
 	 * @return Event listener instance.
 	 */
-	ProxyEventListener getEventListener();
+	ProxyConnectionEventListener getEventListener();
 
 	/**
 	 * Starts the REST server on the given endpoint.

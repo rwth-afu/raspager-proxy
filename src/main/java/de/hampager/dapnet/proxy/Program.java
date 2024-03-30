@@ -74,7 +74,7 @@ public final class Program {
 	}
 
 	private void startProxyManager() {
-		ProxyEventListener listener = null;
+		ProxyConnectionEventListener listener = null;
 		if (restServer != null) {
 			listener = restServer.getEventListener();
 		}
@@ -99,7 +99,7 @@ public final class Program {
 
 	private void registerService(String configFile) {
 		try {
-			ConnectionSettings settings = ConnectionSettings.fromFile(configFile);
+			ConnectionProfile settings = ConnectionProfile.fromFile(configFile);
 			manager.openConnection(settings);
 		} catch (Exception ex) {
 			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);

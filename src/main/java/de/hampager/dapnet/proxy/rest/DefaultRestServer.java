@@ -30,7 +30,7 @@ import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.netty.httpserver.NettyHttpContainerProvider;
 import org.glassfish.jersey.server.ResourceConfig;
 
-import de.hampager.dapnet.proxy.ProxyEventListener;
+import de.hampager.dapnet.proxy.ProxyConnectionEventListener;
 import io.netty.channel.Channel;
 import jakarta.ws.rs.core.UriBuilder;
 
@@ -38,7 +38,7 @@ import jakarta.ws.rs.core.UriBuilder;
  * This class provides the default REST server implementation for querying
  * connection status information.
  */
-final class DefaultRestServer implements ProxyRestServer, ProxyEventListener {
+final class DefaultRestServer implements ProxyRestServer, ProxyConnectionEventListener {
 
 	private static final Logger LOGGER = Logger.getLogger(DefaultRestServer.class.getName());
 	private final Object lockObject = new Object();
@@ -110,7 +110,7 @@ final class DefaultRestServer implements ProxyRestServer, ProxyEventListener {
 	}
 
 	@Override
-	public ProxyEventListener getEventListener() {
+	public ProxyConnectionEventListener getEventListener() {
 		return this;
 	}
 

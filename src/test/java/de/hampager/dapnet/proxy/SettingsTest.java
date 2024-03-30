@@ -34,10 +34,10 @@ public class SettingsTest {
 	public void testFromProperties() {
 		Properties props = createProperties();
 
-		ConnectionSettings s = new ConnectionSettings(props);
+		ConnectionProfile s = new ConnectionProfile(props);
 
 		// General
-		assertEquals("testProfile", s.getProfileName());
+		assertEquals("testProfile", s.getName());
 		assertEquals(0, s.getReconnectDelay().toSeconds());
 
 		// DAPNET
