@@ -90,7 +90,7 @@ final class ProxyManager {
 		b.handler(new FrontendInitializer(settings));
 		b.option(ChannelOption.AUTO_READ, false);
 
-		ChannelFuture connf = b.connect(settings.getFrontendAddress());
+		ChannelFuture connf = b.connect(settings.getDapnetAddress());
 		connf.addListener((ChannelFuture f) -> {
 			if (f.isSuccess()) {
 				onConnectSucceeded(settings, f.channel());
@@ -133,7 +133,7 @@ final class ProxyManager {
 	}
 
 	private boolean scheduleReconnect(final ConnectionSettings settings) {
-		long sleepTime = settings.getReconnectSleepTime();
+		final long sleepTime = settings.getReconnectDelay().toSeconds();
 		if (!shutdownRequested && sleepTime > 0) {
 			LOGGER.log(Level.INFO, "{0} Performing reconnect.", settings.getProfileName());
 

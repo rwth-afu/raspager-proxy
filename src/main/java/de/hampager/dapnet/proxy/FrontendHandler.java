@@ -66,7 +66,7 @@ final class FrontendHandler extends SimpleChannelInboundHandler<String> {
 		b.handler(new BackendInitializer(settings, inboundChannel));
 		b.option(ChannelOption.AUTO_READ, false);
 
-		ChannelFuture f = b.connect(settings.getBackendAddress());
+		ChannelFuture f = b.connect(settings.getTransmitterAddress());
 		outboundChannel = f.channel();
 		f.addListener((ChannelFuture future) -> {
 			if (future.isSuccess()) {

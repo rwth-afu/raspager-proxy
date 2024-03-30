@@ -37,7 +37,7 @@ final class FrontendInitializer extends ChannelInitializer<SocketChannel> {
 	private final ConnectionSettings settings;
 
 	public FrontendInitializer(ConnectionSettings settings) {
-		this.msgEncoder = new WelcomeMessageEncoder(settings.getFrontendName(), settings.getFrontendKey());
+		this.msgEncoder = new WelcomeMessageEncoder(settings.getDapnetAuthName(), settings.getDapnetAuthKey());
 		this.settings = settings;
 	}
 

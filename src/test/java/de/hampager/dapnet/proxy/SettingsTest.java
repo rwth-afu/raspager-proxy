@@ -38,35 +38,35 @@ public class SettingsTest {
 
 		// General
 		assertEquals("testProfile", s.getProfileName());
-		assertEquals(0, s.getReconnectSleepTime());
+		assertEquals(0, s.getReconnectDelay().toSeconds());
 
-		// Frontend
-		assertEquals("proxyTest", s.getFrontendName());
-		assertEquals("test1", s.getFrontendKey());
+		// DAPNET
+		assertEquals("proxyTest", s.getDapnetAuthName());
+		assertEquals("test1", s.getDapnetAuthKey());
 
 		InetSocketAddress address = new InetSocketAddress("localhost", 43434);
-		assertEquals(address, s.getFrontendAddress());
+		assertEquals(address, s.getDapnetAddress());
 
-		// Backend
+		// Transmitter
 		address = new InetSocketAddress("localhost", 43435);
-		assertEquals(address, s.getBackendAddress());
-		assertEquals(30000, s.getBackendTimout());
+		assertEquals(address, s.getTransmitterAddress());
+		assertEquals(30, s.getTransmitterTimeout().toSeconds());
 	}
 
 	private static Properties createProperties() {
 		Properties props = new Properties();
 
-		props.setProperty("profileName", "testProfile");
-		props.setProperty("reconnectSleepTime", "0");
-		// Frontend configuration
-		props.setProperty("frontend.name", "proxyTest");
-		props.setProperty("frontend.key", "test1");
-		props.setProperty("frontend.host", "localhost");
-		props.setProperty("frontend.port", "43434");
-		// Backend configuration
-		props.setProperty("backend.host", "localhost");
-		props.setProperty("backend.port", "43435");
-		props.setProperty("backend.timeout", "30000");
+		props.setProperty("profile.name", "testProfile");
+		props.setProperty("profile.reconnectDelay", "0");
+		// DAPNET configuration
+		props.setProperty("dapnet.auth.name", "proxyTest");
+		props.setProperty("dapnet.auth.key", "test1");
+		props.setProperty("dapnet.hostname", "localhost");
+		props.setProperty("dapnet.port", "43434");
+		// Transmitter configuration
+		props.setProperty("transmitter.hostname", "localhost");
+		props.setProperty("transmitter.port", "43435");
+		props.setProperty("transmitter.timeout", "30");
 
 		return props;
 	}

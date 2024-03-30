@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,22 +21,21 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.Properties;
 
 /**
  * This class contains the connection profile settings.
- *
- * @author Philipp Thiel
  */
 final class ConnectionSettings {
 
-	private final String profileName;
-	private final String frontendName;
-	private final String frontendKey;
-	private final SocketAddress frontendAddress;
-	private final SocketAddress backendAddress;
-	private final long reconnectSleepTime;
-	private final long backendTimeout;
+	private String profileName;
+	private String authName;
+	private String authKey;
+	private SocketAddress dapnetAddress;
+	private SocketAddress transmitterAddress;
+	private Duration reconnectDelay;
+	private Duration transmitterTimeout;
 
 	/**
 	 * Creates a settings instance by loading the settings from the given
@@ -46,22 +45,40 @@ final class ConnectionSettings {
 	 * @throws NullPointerException If a required settings is not found.
 	 */
 	public ConnectionSettings(Properties props) {
-		profileName = getString(props, "profileName");
+		getCommonConfig(props);
+		getDapnetConfig(props);
+		getTransmitterConfig(props);
+	}
 
-		// Retry sleep time
-		reconnectSleepTime = getLong(props, "reconnectSleepTime");
-		if (reconnectSleepTime < 0) {
+	private void getCommonConfig(Properties props) {
+		profileName = getString(props, "profile.name");
+		if (profileName.isEmpty()) {
+			throw new IllegalArgumentException("Profile name must not be empty.");
+		}
+
+		long tmpLong = getLong(props, "profile.reconnectDelay");
+		if (tmpLong < 0) {
 			throw new IllegalArgumentException("Reconnect sleep time cannot be negative.");
 		}
 
-		// Frontend configuration
-		frontendName = getString(props, "frontend.name");
-		frontendKey = getString(props, "frontend.key");
-		frontendAddress = getAddress(props, "frontend.host", "frontend.port");
+		reconnectDelay = Duration.ofSeconds(tmpLong);
+	}
 
-		// Backend configuration
-		backendAddress = getAddress(props, "backend.host", "backend.port");
-		backendTimeout = getLong(props, "backend.timeout");
+	private void getDapnetConfig(Properties props) {
+		authName = getString(props, "dapnet.auth.name");
+		authKey = getString(props, "dapnet.auth.key");
+		dapnetAddress = getAddress(props, "dapnet.hostname", "dapnet.port");
+	}
+
+	private void getTransmitterConfig(Properties props) {
+		transmitterAddress = getAddress(props, "transmitter.hostname", "transmitter.port");
+
+		long tmpLong = getLong(props, "transmitter.timeout");
+		if (tmpLong < 0) {
+			throw new IllegalArgumentException("Transmitter timeout cannot be negative.");
+		}
+
+		transmitterTimeout = Duration.ofSeconds(tmpLong);
 	}
 
 	/**
@@ -91,57 +108,57 @@ final class ConnectionSettings {
 	}
 
 	/**
-	 * Returns the sleep time between retries in milliseconds.
+	 * Returns the sleep time between retries.
 	 *
-	 * @return Time to sleep between retries in milliseconds.
+	 * @return Time to sleep between retries.
 	 */
-	public long getReconnectSleepTime() {
-		return reconnectSleepTime;
+	public Duration getReconnectDelay() {
+		return reconnectDelay;
 	}
 
 	/**
-	 * Gets the frontend server address.
+	 * Gets the Transmitter server address.
 	 *
-	 * @return Frontend server address.
+	 * @return Transmitter server address.
 	 */
-	public SocketAddress getFrontendAddress() {
-		return frontendAddress;
+	public SocketAddress getDapnetAddress() {
+		return dapnetAddress;
 	}
 
 	/**
-	 * Gets the name used to authenticate with the frontend server.
+	 * Gets the transmitter name used to authenticate with the DAPNET server.
 	 *
-	 * @return Frontend authentication name.
+	 * @return Transmitter authentication name.
 	 */
-	public String getFrontendName() {
-		return frontendName;
+	public String getDapnetAuthName() {
+		return authName;
 	}
 
 	/**
-	 * Gets the auth key used to authenticate with the frontend server.
+	 * Gets the auth key used to authenticate with the DAPNET server.
 	 *
-	 * @return Frontend authentication key.
+	 * @return authentication key.
 	 */
-	public String getFrontendKey() {
-		return frontendKey;
+	public String getDapnetAuthKey() {
+		return authKey;
 	}
 
 	/**
-	 * Gets the backend server address.
+	 * Gets the transmitter server address.
 	 *
-	 * @return Backend server address.
+	 * @return Transmitter server address.
 	 */
-	public SocketAddress getBackendAddress() {
-		return backendAddress;
+	public SocketAddress getTransmitterAddress() {
+		return transmitterAddress;
 	}
 
 	/**
-	 * Gets the backend timeout in milliseconds.
+	 * Gets the transmitter connection timeout.
 	 *
-	 * @return Backend timeout in milliseconds.
+	 * @return Transmitter connection timeout.
 	 */
-	public long getBackendTimout() {
-		return backendTimeout;
+	public Duration getTransmitterTimeout() {
+		return transmitterTimeout;
 	}
 
 	private static String getString(Properties props, String key) {

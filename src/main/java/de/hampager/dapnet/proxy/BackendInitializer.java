@@ -52,8 +52,9 @@ class BackendInitializer extends ChannelInitializer<SocketChannel> {
 		p.addLast(ENCODER);
 		p.addLast(APPENDER);
 
-		if (settings.getBackendTimout() > 0) {
-			p.addLast(new IdleStateHandler(settings.getBackendTimout(), 0, 0, TimeUnit.MILLISECONDS));
+		final long timeout = settings.getTransmitterTimeout().toSeconds();
+		if (timeout > 0) {
+			p.addLast(new IdleStateHandler(timeout, 0, 0, TimeUnit.SECONDS));
 		}
 
 		p.addLast(new BackendHandler(settings.getProfileName(), inbound));
