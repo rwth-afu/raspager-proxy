@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Amateurfunkgruppe an der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,11 @@
  */
 package de.hampager.dapnet.proxy;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -42,8 +42,8 @@ final class TransmitterChannelHandler extends SimpleChannelInboundHandler<String
 	private volatile State state = State.HANDSHAKE;
 
 	public TransmitterChannelHandler(String profileName, Channel dapnetChannel) {
-		this.profileName = profileName;
-		this.dapnetChannel = dapnetChannel;
+		this.profileName = Objects.requireNonNull(profileName);
+		this.dapnetChannel = Objects.requireNonNull(dapnetChannel);
 	}
 
 	@Override
@@ -113,23 +113,11 @@ final class TransmitterChannelHandler extends SimpleChannelInboundHandler<String
 	private void forwardMessage(final ChannelHandlerContext ctx, String msg) throws Exception {
 		LOGGER.log(Level.FINEST, "{0} Forwarding message from transmitter to DAPNET.", profileName);
 
-		dapnetChannel.writeAndFlush(msg).addListener((ChannelFuture future) -> {
-			if (future.isSuccess()) {
-				ctx.channel().read();
-			} else {
-				future.channel().close();
-			}
-		});
+		dapnetChannel.writeAndFlush(msg).addListener(new ChannelFutureListeners.ReadNextFutureListener(ctx.channel()));
 	}
 
 	private void writeMessage(ChannelHandlerContext ctx, String msg) throws Exception {
-		ctx.writeAndFlush(msg).addListener((ChannelFuture f) -> {
-			if (f.isSuccess()) {
-				f.channel().read();
-			} else {
-				f.channel().close();
-			}
-		});
+		ctx.writeAndFlush(msg).addListener(ChannelFutureListeners.READ_ON_SUCCESS);
 	}
 
 	private void handleReadTimeout(ChannelHandlerContext ctx) throws Exception {
