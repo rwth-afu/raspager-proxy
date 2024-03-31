@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 
-class ChannelFutureListeners {
+final class ChannelFutureListeners {
 
 	public static final ChannelFutureListener READ_ON_SUCCESS = new ChannelFutureListener() {
 		@Override

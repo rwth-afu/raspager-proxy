@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2024 Amateurfunkgruppe der RWTH Aachen
+ * Copyright (C) 2017-2024 Amateurfunkgruppe an der RWTH Aachen
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
