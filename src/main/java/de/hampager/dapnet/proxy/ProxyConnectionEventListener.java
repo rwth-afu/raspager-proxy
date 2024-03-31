@@ -43,8 +43,4 @@ public interface ProxyConnectionEventListener {
 	 */
 	void onDisconnect(String profileName, boolean reconnect);
 
-	/**
-	 * Called when the proxy manager is shutting down.
-	 */
-	void onShutdown();
 }

@@ -54,8 +54,12 @@ public final class Program {
 			throw new IllegalArgumentException("No configuration files provided.");
 		}
 
-		startRestServer();
-		startProxyManager();
+		if (manager == null) {
+			Runtime.getRuntime().addShutdownHook(new ShutdownHook());
+
+			startRestServer();
+			startProxyManager();
+		}
 
 		for (String config : configFiles) {
 			registerService(config);
@@ -80,21 +84,6 @@ public final class Program {
 		}
 
 		manager = new ProxyConnectionManager(listener);
-		registerShutdownHook();
-	}
-
-	private void registerShutdownHook() {
-		Runnable hook = () -> {
-			try {
-				if (manager != null) {
-					manager.shutdown();
-				}
-			} catch (Exception ex) {
-				LOGGER.log(Level.SEVERE, "Failed to stop proxy manager.", ex);
-			}
-		};
-
-		Runtime.getRuntime().addShutdownHook(new Thread(hook, "ShutdownHook"));
 	}
 
 	private void registerService(String configFile) {
@@ -104,6 +93,33 @@ public final class Program {
 		} catch (Exception ex) {
 			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
 		}
+	}
+
+	private final class ShutdownHook extends Thread {
+
+		public ShutdownHook() {
+			super("ShutdownHook");
+		}
+
+		@Override
+		public void run() {
+			try {
+				if (restServer != null) {
+					restServer.stop();
+				}
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to stop the REST server.", ex);
+			}
+
+			try {
+				if (manager != null) {
+					manager.shutdown();
+				}
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to stop the proxy manager.", ex);
+			}
+		}
+
 	}
 
 }

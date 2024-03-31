@@ -38,7 +38,7 @@ final class ProxyConnectionManager {
 	/**
 	 * Creates a new proxy connection manager instance.
 	 *
-	 * @param listener Proxy event listener to use.
+	 * @param listener Proxy event listener to use or {@code null}.
 	 */
 	public ProxyConnectionManager(ProxyConnectionEventListener listener) {
 		this.listener = listener;
@@ -58,7 +58,7 @@ final class ProxyConnectionManager {
 		ProxyConnection connection = new ProxyConnection(workerGroup, listener, profile);
 		connections.put(profile.getName(), connection);
 
-		workerGroup.submit(() -> connection.connect());
+		workerGroup.execute(connection);
 
 		if (listener != null) {
 			listener.onRegister(profile.getName());
@@ -72,14 +72,6 @@ final class ProxyConnectionManager {
 		shutdownRequested = true;
 
 		LOGGER.info("Shutting down proxy connection manager ...");
-
-		if (listener != null) {
-			try {
-				listener.onShutdown();
-			} catch (Exception ex) {
-				LOGGER.log(Level.SEVERE, "Failed to shut down proxy event listener.", ex);
-			}
-		}
 
 		try {
 			workerGroup.shutdownGracefully().sync();

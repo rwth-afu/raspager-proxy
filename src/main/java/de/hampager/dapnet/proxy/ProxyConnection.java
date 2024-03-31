@@ -35,7 +35,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 /**
  * Proxy connection implementation.
  */
-final class ProxyConnection {
+final class ProxyConnection implements Runnable {
 
 	private static final Logger LOGGER = Logger.getLogger(ProxyConnection.class.getName());
 
@@ -68,21 +68,6 @@ final class ProxyConnection {
 	 */
 	public ConnectionProfile getProfile() {
 		return profile;
-	}
-
-	/**
-	 * Establishes the proxy connection.
-	 * 
-	 * @throws IllegalStateException if the connection is already open.
-	 */
-	public void connect() {
-		if (isActive()) {
-			throw new IllegalStateException("Already connected.");
-		}
-
-		closeRequested = false;
-
-		connectDapnet();
 	}
 
 	/**
@@ -120,7 +105,7 @@ final class ProxyConnection {
 		if (doReconnect) {
 			LOGGER.log(Level.INFO, "{0} Performing reconnect.", profile.getName());
 
-			workerGroup.schedule(() -> connect(), sleepTime, TimeUnit.SECONDS);
+			workerGroup.schedule(this, sleepTime, TimeUnit.SECONDS);
 		}
 
 		return doReconnect;
@@ -198,6 +183,22 @@ final class ProxyConnection {
 			workerGroup.execute(() -> eventListener.onDisconnect(profile.getName(), reconnecting));
 		}
 
+	}
+
+	/**
+	 * Establishes the proxy connection.
+	 * 
+	 * @throws IllegalStateException if the connection is already open.
+	 */
+	@Override
+	public void run() {
+		if (isActive()) {
+			throw new IllegalStateException("Already connected.");
+		}
+
+		closeRequested = false;
+
+		connectDapnet();
 	}
 
 }

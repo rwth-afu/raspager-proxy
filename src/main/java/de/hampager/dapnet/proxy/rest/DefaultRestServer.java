@@ -84,11 +84,6 @@ final class DefaultRestServer implements ProxyRestServer, ProxyConnectionEventLi
 	}
 
 	@Override
-	public void onShutdown() {
-		stop();
-	}
-
-	@Override
 	public Collection<ConnectionStatus> getConnections() {
 		Collection<ConnectionStatus> result = null;
 		synchronized (lockObject) {
