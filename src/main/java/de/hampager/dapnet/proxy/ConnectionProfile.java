@@ -27,7 +27,7 @@ import java.util.Properties;
 /**
  * This class represents the proxy connection profile.
  */
-final class ConnectionProfile {
+public final class ConnectionProfile {
 
 	private String name;
 	private String authName;

@@ -49,9 +49,15 @@ public final class Program {
 		}
 	}
 
-	public void run(String... configFiles) throws Exception {
-		if (configFiles.length < 1) {
-			throw new IllegalArgumentException("No configuration files provided.");
+	/**
+	 * Runs the DAPNET proxy with the given connection profiles.
+	 * 
+	 * @param profiles Connection profiles to use
+	 * @throws Exception if an exception occurs while starting the proxy.
+	 */
+	public void run(ConnectionProfile... profiles) throws Exception {
+		if (profiles.length < 1) {
+			throw new IllegalArgumentException("No connection profiles provided.");
 		}
 
 		if (manager == null) {
@@ -61,9 +67,34 @@ public final class Program {
 			startProxyManager();
 		}
 
-		for (String config : configFiles) {
-			registerService(config);
+		for (ConnectionProfile profile : profiles) {
+			try {
+				manager.openConnection(profile);
+			} catch (Exception ex) {
+				LOGGER.log(Level.SEVERE, "Failed to load configuration profile.", ex);
+			}
 		}
+	}
+
+	/**
+	 * Runs the DAPNET proxy with the given configuration files. Before the proxy is
+	 * started, all connection profiles are read from file. If reading a profile
+	 * fails, the proxy will not be started at all.
+	 * 
+	 * @param configFiles Configuration files to read
+	 * @throws Exception if an exception occurs while starting the proxy.
+	 */
+	public void run(String... configFiles) throws Exception {
+		if (configFiles.length < 1) {
+			throw new IllegalArgumentException("No configuration files provided.");
+		}
+
+		final ConnectionProfile[] profiles = new ConnectionProfile[configFiles.length];
+		for (int i = 0; i < configFiles.length; ++i) {
+			profiles[i] = ConnectionProfile.fromFile(configFiles[i]);
+		}
+
+		run(profiles);
 	}
 
 	private void startRestServer() throws Exception {
@@ -84,15 +115,6 @@ public final class Program {
 		}
 
 		manager = new ProxyConnectionManager(listener);
-	}
-
-	private void registerService(String configFile) {
-		try {
-			ConnectionProfile settings = ConnectionProfile.fromFile(configFile);
-			manager.openConnection(settings);
-		} catch (Exception ex) {
-			LOGGER.log(Level.SEVERE, "Failed to load configuration file.", ex);
-		}
 	}
 
 	private final class ShutdownHook extends Thread {
